@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>flowQ — Department Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* flowQ design tokens */
+:root{--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--warn:#F5A524;--bad:#E5484D;--ok:#2FA66A;--onp:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}}
+:root[data-theme="dark"]{--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;transition:background .4s}
+h1,h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.035em;line-height:1}
+.wrap{max-width:1120px;margin:auto;padding:0 1.25rem}
+.mut{color:var(--mut)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.card{padding:1.5rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.1rem;border-radius:.7rem;font:600 .9rem Inter,sans-serif;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}.btn.sm{padding:.3rem .75rem;font-size:.8rem}.btn.del{color:var(--bad)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{display:inline-block;padding:.15rem .7rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+header{position:sticky;top:0;z-index:40;padding-top:env(safe-area-inset-top,0px);backdrop-filter:blur(12px);background:color-mix(in srgb,var(--bg) 75%,transparent);border-bottom:1px solid var(--bd)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;gap:1rem}
+.logo{font-weight:800;font-size:1.3rem}
+.blob{position:fixed;border-radius:50%;filter:blur(100px);opacity:.25;z-index:-1;pointer-events:none}.b1{width:420px;height:420px;background:var(--pri);top:-120px;left:-120px}.b2{width:340px;height:340px;background:var(--acc);bottom:-100px;right:-80px}
+main{padding:2.2rem 0 5rem}
+h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;margin:.8rem 0 .4rem}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;margin:1.6rem 0;padding-bottom:.3rem}
+.tab{flex:0 0 auto;padding:.55rem 1.1rem;border-radius:99px;border:1px solid var(--bd);background:none;color:var(--fg);cursor:pointer;font:600 .92rem Inter,sans-serif}
+.tab[aria-selected=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.panel{display:none}.panel.on{display:block;animation:pin .35s}.panel.q{animation:none}@keyframes pin{from{opacity:0;transform:translateY(8px)}}
+.g4{display:grid;gap:1rem;grid-template-columns:repeat(4,1fr)}.g2{display:grid;gap:1.25rem;grid-template-columns:1fr 1fr}.g3{display:grid;gap:1.25rem;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+@media(max-width:860px){.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+.m b{display:block;font:800 2.3rem 'Bricolage Grotesque',sans-serif;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+label,.lb{display:block;margin:1rem 0 .3rem;font-size:.85rem;font-weight:600}.lb:first-child,label:first-child{margin-top:0}
+input,select{width:100%;padding:.65rem .8rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:inherit}
+.stp{display:inline-flex;align-items:center;gap:.8rem;border:1px solid var(--bd);border-radius:.7rem;padding:.2rem}.stp button{width:36px;height:36px;border-radius:.5rem;border:0;background:var(--card);color:var(--fg);font-size:1.2rem;cursor:pointer}.stp b{min-width:3ch;text-align:center;font-variant-numeric:tabular-nums}
+.seg{display:flex;flex-wrap:wrap;gap:.4rem}.seg button{padding:.4rem .85rem;border-radius:99px;border:1px solid var(--bd);background:none;color:var(--fg);font:600 .82rem Inter,sans-serif;cursor:pointer}.seg button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.list>div{display:flex;justify-content:space-between;align-items:center;gap:.8rem;padding:.7rem 0;border-bottom:1px solid var(--bd)}
+.add{display:flex;gap:.6rem;margin-top:1rem;flex-wrap:wrap}.add input{flex:1;min-width:140px}.add .n{max-width:110px}
+.meter{height:9px;border-radius:9px;background:var(--bd);overflow:hidden;margin:.4rem 0}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),var(--acc));transition:width .5s}
+.chart{display:flex;align-items:flex-end;gap:6px;height:160px;margin-top:.8rem}.chart div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:.7rem;color:var(--mut)}.chart i{width:100%;background:var(--pri);opacity:.85;border-radius:6px 6px 0 0;transition:height .5s}.chart .nw i{background:var(--acc);opacity:1}
+.tk{display:inline-block;margin:.2rem;padding:.15rem .6rem;border-radius:.5rem;background:color-mix(in srgb,var(--pri) 16%,transparent);color:var(--pri);font-weight:600;font-size:.82rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:.4rem}
+.tag{border-radius:99px;padding:.15rem .7rem;font-size:.75rem;font-weight:700}.tag.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}.tag.no{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+#ts{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,40px);opacity:0;z-index:150;padding:.8rem 1.2rem;border-radius:99px;background:var(--fg);color:var(--bg);transition:.3s;pointer-events:none;max-width:90vw;text-align:center}#ts.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<header><div class="wrap"><span class="logo disp">flow<span class="grad">Q</span></span>
+<div style="display:flex;gap:.6rem;align-items:center"><span class="pill" id="role">Department Manager</span><button class="btn" id="th" aria-label="Toggle dark and light mode">◐</button><button class="btn" id="out">Log out</button></div></div></header>
+
+<main><div class="wrap">
+  <span class="pill" id="dname">Loading…</span> <select id="dpick" hidden aria-label="Department" style="width:auto;margin-left:.4rem;padding:.3rem .6rem"></select>
+  <h1>Manager <span class="grad">dashboard</span></h1>
+  <p class="mut" style="max-width:40rem">Run your department: staff, counters, services, working hours, appointment rules, and live queue numbers.</p>
+  <div class="tabs" role="tablist" id="tabs" aria-label="Manager tools">
+    <button class="tab" role="tab" aria-selected="true" data-t="ov">Live queue</button><button class="tab" role="tab" aria-selected="false" data-t="st">Staff</button><button class="tab" role="tab" aria-selected="false" data-t="ct">Service counters</button><button class="tab" role="tab" aria-selected="false" data-t="sv">Services</button><button class="tab" role="tab" aria-selected="false" data-t="sc">Hours and limits</button><button class="tab" role="tab" aria-selected="false" data-t="rp">Workload and waiting times</button>
+  </div>
+  <div id="app"></div>
+</div></main>
+<div id="ts" role="status"></div>
+
+<script src="js/api.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],E=FQ.esc;
+try{const t=localStorage.getItem('fq-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+$('#th').onclick=()=>{const d=document.documentElement,n=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('fq-theme',n)}catch(e){}};
+$('#out').onclick=()=>FQ.logout();
+function toast(t){const e=$('#ts');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2800)}
+
+/* ---------- state (all from the API) ---------- */
+let U=null,DEP=null,tab='ov',live=true,busy=false;
+const D={};   // latest data per tab
+const PERM={ov:'view_department_stats',st:'manage_staff',ct:'manage_counters',sv:'manage_department_services',sc:'manage_schedule',rp:'view_department_stats'};
+const SRC={ov:'/manager/overview',st:'/manager/staff',ct:'/manager/counters',sv:'/manager/services',sc:'/manager/schedule',rp:'/manager/reports'};
+const scoped=p=>U&&U.role==='admin'?p+(p.includes('?')?'&':'?')+'department_id='+DEP:p;
+const call=(p,o)=>FQ.api(scoped(p),o);
+
+/* ---------- views ---------- */
+function chart(rows,now){const mx=Math.max(1,...rows.map(r=>r.value),now);return `<div class="chart" aria-hidden="true">${rows.map(r=>`<div><i style="height:${r.value/mx*100}%"></i>${E(r.label)}</div>`).join('')}<div class="nw"><i style="height:${now/mx*100}%"></i>Now</div></div>`}
+const V={
+ov(o){const t=o.waiting_tokens.slice(0,14).map(x=>`<span class="tk">${E(x)}</span>`).join('');
+ return `<div class="g4"><div class="glass card m"><b>${o.waiting}</b>Currently waiting</div><div class="glass card m"><b>${o.active_counters}</b>Active counters</div><div class="glass card m"><b>${o.eta_minutes===null?'—':o.eta_minutes+' min'}</b>Estimated wait</div><div class="glass card m"><b>${o.appointments_today}/${o.daily_limit}</b>Appointments today</div></div>
+ <div class="g2" style="margin-top:1.25rem"><div class="glass card"><div style="display:flex;justify-content:space-between;align-items:center;gap:1rem"><h3 style="font-size:1.4rem">Queue length now</h3><button class="btn sm" data-a="live">${live?'Pause live updates':'Resume live updates'}</button></div>
+ <p class="mut" style="margin:.5rem 0 .8rem">Now serving ${E(o.now_serving||'—')}. ${o.waiting} waiting.${o.eta_minutes===null&&o.waiting?' No active counters: customers are held until one opens.':''}</p><div>${t||'<span class="mut">Queue is empty.</span>'}${o.waiting>14?` <span class="mut">+${o.waiting-14} more</span>`:''}</div></div>
+ <div class="glass card"><h3 style="font-size:1.4rem">Queue length by hour</h3>${chart(o.hours,o.waiting)}</div></div>`},
+st(list){return `<div class="glass card"><h3 style="font-size:1.4rem">Manage staff</h3><div class="list" style="margin-top:.6rem">${list.map(s=>`<div><div><b>${E(s.full_name)}</b><div class="mut" style="font-size:.85rem">${E(s.email)} · ${s.counter?E(s.counter)+' · '+E(s.counter_status):'Not assigned to a counter'} · ${s.served} served today</div></div><button class="btn sm del" data-a="rmS" data-id="${s.id}" data-n="${E(s.full_name)}">Remove</button></div>`).join('')||'<p class="mut" style="padding:1rem 0">No staff yet. Add your first team member.</p>'}</div>
+ <div class="add"><input id="nsn" placeholder="Full name" aria-label="New staff name" autocomplete="off"><input id="nse" type="email" placeholder="Email (their login)" aria-label="New staff email" autocomplete="off"><input id="nsp" type="password" placeholder="Temporary password (8+)" aria-label="Temporary password" autocomplete="new-password"><button class="btn p" data-a="addS">Add staff</button></div><p class="mut" style="font-size:.85rem;margin-top:.8rem">New staff log in with this email and password. Assign them to a counter in Service counters.</p></div>`},
+ct(c){const free=c.staff.filter(s=>!c.counters.some(o=>o.staff_id===s.id));
+ return `<div class="g3">${c.counters.map(k=>{const shown=k.status==='Available'||k.status==='Busy'?'Active':k.status;return `<div class="glass card"><div style="display:flex;justify-content:space-between;align-items:center"><b class="disp" style="font-size:1.25rem">${E(k.name)}</b><span style="font-weight:600;font-size:.85rem"><i class="dot" style="background:${{Active:'var(--ok)',Break:'var(--warn)',Closed:'var(--bad)'}[shown]}"></i>${k.status==='Busy'?'Active · serving '+E(k.current_token||''):shown}</span></div>
+ <div class="lb">Status</div><div class="seg">${['Active','Break','Closed'].map(x=>`<button aria-pressed="${shown===x}" data-a="cs" data-id="${k.id}" data-v="${x}">${x}</button>`).join('')}</div>
+ <label for="as${k.id}">Assigned staff</label><select id="as${k.id}" data-a="as" data-id="${k.id}"><option value="">Unassigned</option>${[...(k.staff_id?[{id:k.staff_id,full_name:k.staff_name}]:[]),...free].map(s=>`<option value="${s.id}" ${k.staff_id===s.id?'selected':''}>${E(s.full_name)}</option>`).join('')}</select>
+ <button class="btn sm del" style="margin-top:1rem" data-a="rmC" data-id="${k.id}" data-n="${E(k.name)}">Remove counter</button></div>`}).join('')||'<p class="mut">No counters yet.</p>'}</div>
+ <div class="add"><button class="btn p" data-a="addC" ${c.counters.length>=c.max_counters?'disabled':''}>Add service counter</button><span class="mut" style="align-self:center;font-size:.85rem">${c.counters.length}/${c.max_counters} counters</span></div>`},
+sv(list){return `<div class="glass card"><h3 style="font-size:1.4rem">Create and manage services</h3><div class="list" style="margin-top:.6rem">${list.map(s=>`<div><div><b>${E(s.name)}</b><div class="mut" style="font-size:.85rem">${s.avg_minutes} minutes</div></div><div style="display:flex;gap:.5rem;align-items:center"><button class="btn sm" data-a="sv" data-id="${s.id}" data-on="${s.active}">${s.active?'Available':'Unavailable'}</button><button class="btn sm del" data-a="rmV" data-id="${s.id}" data-n="${E(s.name)}">Delete</button></div></div>`).join('')||'<p class="mut" style="padding:1rem 0">No services yet. Create one below.</p>'}</div>
+ <div class="add"><input id="nvn" placeholder="Service name" aria-label="Service name"><input id="nvm" class="n" type="number" min="1" max="120" placeholder="Minutes" aria-label="Minutes needed"><button class="btn p" data-a="addV">Create service</button></div></div>`},
+sc(s){const p=Math.min(100,s.booked_today/s.daily_limit*100);
+ return `<div class="g2"><div class="glass card"><h3 style="font-size:1.4rem;margin-bottom:1rem">Working hours</h3><div class="g2" style="gap:.8rem"><div><label for="hs">Opens</label><input id="hs" type="time" value="${s.open_time}" data-a="hrs"></div><div><label for="he">Closes</label><input id="he" type="time" value="${s.close_time}" data-a="hrs"></div></div>
+ <label for="du">Appointment duration</label><select id="du" data-a="dur">${[15,30,45,60].map(d=>`<option value="${d}" ${s.slot_minutes===d?'selected':''}>${d} minutes</option>`).join('')}</select>
+ <p class="mut" style="font-size:.85rem;margin-top:.8rem">${s.slots_per_day} appointment slots each day.</p>
+ <div class="lb">Customers per time slot</div><div class="stp"><button data-a="cap" data-d="-1" aria-label="Fewer per slot">−</button><b>${s.slot_capacity}</b><button data-a="cap" data-d="1" aria-label="More per slot">+</button></div></div>
+ <div class="glass card"><h3 style="font-size:1.4rem;margin-bottom:1rem">Daily appointment limit</h3><div class="stp"><button data-a="lim" data-d="-10" aria-label="Lower limit">−</button><b>${s.daily_limit}</b><button data-a="lim" data-d="10" aria-label="Raise limit">+</button></div>
+ <div class="lb">Booked today: ${s.booked_today} of ${s.daily_limit}</div><div class="meter"><i style="width:${p}%"></i></div><span class="tag ${s.booked_today>=s.daily_limit?'no':'ok'}">${s.booked_today>=s.daily_limit?'Limit reached. New bookings are blocked.':(s.daily_limit-s.booked_today)+' left today'}</span></div></div>`},
+rp(r){return `<div class="g2"><div class="glass card"><h3 style="font-size:1.4rem">Staff workload</h3><p class="mut" style="font-size:.85rem">Tokens served today, against a target of ${r.target}.</p><div style="margin-top:.8rem">${r.workload.map(s=>`<div style="margin-bottom:.9rem"><div style="display:flex;justify-content:space-between"><b>${E(s.name)}</b><span class="mut">${s.served} served · ${s.percent}%</span></div><div class="meter"><i style="width:${s.percent}%"></i></div><span class="mut" style="font-size:.8rem">${s.counter?E(s.counter)+' ('+E(s.counter_status)+')':'Not assigned'}</span></div>`).join('')||'<p class="mut">No staff to show.</p>'}</div></div>
+ <div class="glass card"><h3 style="font-size:1.4rem">Waiting-time statistics</h3><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:.8rem"><div class="m"><b>${r.avg_wait}</b>Average wait (min)</div><div class="m"><b>${r.longest_wait}</b>Longest wait (min)</div><div class="m"><b>${r.peak_queue}</b>Peak queue length</div></div><div class="lb" style="margin-top:1rem">Average wait by hour (minutes)</div>${chart(r.wait_by_hour,r.current_eta||0)}</div></div>`}};
+
+function draw(quiet){$$('.tab').forEach(t=>t.setAttribute('aria-selected',String(t.dataset.t===tab)));
+ $('#app').innerHTML=D[tab]?`<div class="panel on${quiet?' q':''}">${V[tab](D[tab])}</div>`:'<p class="mut">Loading…</p>'}
+async function load(quiet){const t=tab;try{D[t]=await call(SRC[t]);if(t===tab)draw(quiet)}catch(e){if(!quiet)toast(e.message)}}
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;tab=b.dataset.t;draw();load()};
+
+/* ---------- actions ---------- */
+async function act(fn,msg){if(busy)return;busy=true;try{const r=await fn();if(r!==undefined){D[tab]=r;draw(true)}if(msg)toast(msg)}catch(e){toast(e.message);load(true)}finally{busy=false}}
+const put=b=>call('/manager/schedule',{method:'PUT',body:b});
+$('#app').addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b||b.disabled)return;const a=b.dataset.a,id=b.dataset.id;
+ if(a==='live'){live=!live;draw(true)}
+ else if(a==='addS'){const n=$('#nsn').value.trim(),m=$('#nse').value.trim(),p=$('#nsp').value;
+  if(n.length<2)return toast('Enter the staff member\'s full name.');if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m))return toast('Enter a valid email for their login.');if(p.length<8)return toast('The password needs at least 8 characters.');
+  act(()=>call('/manager/staff',{method:'POST',body:{full_name:n,email:m,password:p}}),n+' added')}
+ else if(a==='rmS'){if(confirm(`Remove ${b.dataset.n}? Their account is deactivated and their counter closes.`))act(()=>call('/manager/staff/'+id,{method:'DELETE'}),b.dataset.n+' removed')}
+ else if(a==='cs')act(()=>call(`/manager/counters/${id}/status`,{method:'PUT',body:{status:b.dataset.v}}))
+ else if(a==='rmC'){if(confirm(`Remove ${b.dataset.n}?`))act(()=>call('/manager/counters/'+id,{method:'DELETE'}),'Counter removed')}
+ else if(a==='addC')act(()=>call('/manager/counters',{method:'POST'}),'Counter added')
+ else if(a==='sv')act(()=>call('/manager/services/'+id,{method:'PATCH',body:{active:b.dataset.on!=='true'}}))
+ else if(a==='rmV'){if(confirm(`Delete the service ${b.dataset.n}?`))act(()=>call('/manager/services/'+id,{method:'DELETE'}),'Service deleted')}
+ else if(a==='addV'){const n=$('#nvn').value.trim(),m=+$('#nvm').value;if(n.length<2||!(m>=1&&m<=120))return toast('Enter a service name and the minutes it takes (1 to 120).');
+  act(()=>call('/manager/services',{method:'POST',body:{name:n,avg_minutes:m}}),n+' created')}
+ else if(a==='lim'){const v=Math.max(10,Math.min(500,D.sc.daily_limit+ +b.dataset.d));if(v!==D.sc.daily_limit)act(()=>put({daily_limit:v}))}
+ else if(a==='cap'){const v=Math.max(1,Math.min(50,D.sc.slot_capacity+ +b.dataset.d));if(v!==D.sc.slot_capacity)act(()=>put({slot_capacity:v}))}});
+$('#app').addEventListener('change',e=>{const a=e.target.dataset.a;
+ if(a==='as'){const id=e.target.dataset.id,v=e.target.value||null;act(()=>call(`/manager/counters/${id}/staff`,{method:'PUT',body:{staff_id:v}}),v?'Staff assigned':'Staff unassigned. The counter is closed.')}
+ else if(a==='dur')act(()=>put({slot_minutes:+e.target.value}),'Appointment duration set to '+e.target.value+' minutes');
+ else if(a==='hrs'){const s=$('#hs').value,en=$('#he').value;if(!s||!en||en<=s){toast('Closing time must be after opening time.');draw(true);return}
+  act(()=>put({open_time:s,close_time:en}),'Working hours saved')}});
+
+/* ---------- start ---------- */
+(async()=>{U=await FQ.guard();
+ $('#role').textContent=U.role==='admin'?'Administrator':'Department Manager';
+ $$('.tab').forEach(t=>t.hidden=!FQ.can(U,PERM[t.dataset.t]));
+ const first=$$('.tab').find(t=>!t.hidden);
+ if(!first){$('#app').innerHTML='<p class="mut">Your role has no manager tools enabled. Ask an administrator.</p>';$('#dname').textContent=U.department||'';return}
+ tab=first.dataset.t;
+ try{const deps=await FQ.api('/manager/departments');
+  if(U.role==='admin'){DEP=deps[0]&&deps[0].id;$('#dpick').hidden=false;$('#dpick').innerHTML=deps.map(d=>`<option value="${d.id}">${E(d.place)} · ${E(d.name)}</option>`).join('');
+   $('#dpick').onchange=e=>{DEP=+e.target.value;for(const k in D)delete D[k];$('#dname').textContent=$('#dpick').selectedOptions[0].textContent;draw();load()};
+   $('#dname').textContent=deps[0]?`${deps[0].place} · ${deps[0].name}`:'No departments'}
+  else $('#dname').textContent=deps[0]?deps[0].name:(U.department||'')}
+ catch(e){$('#dname').textContent=U.department||'';if(e.status!==403)toast(e.message)}
+ draw();await load();
+ FQ.poll(()=>live&&!busy&&(tab==='ov'||tab==='rp')?load(true):null,5000)})();
+</script>
+</body>
+</html>

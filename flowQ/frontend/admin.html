@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flowQ · Administrator Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--mode:light;--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--onp:#fff;--ok:#2FB36B;--bad:#E5484D}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}}
+:root[data-theme="dark"]{--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.55 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;
+ background-image:radial-gradient(900px 500px at 88% -5%,rgba(108,77,246,.16),transparent 60%),radial-gradient(700px 500px at -5% 45%,rgba(255,107,138,.13),transparent 60%);background-attachment:fixed}
+h1,h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.03em;line-height:1.05}
+.wrap{max-width:1160px;margin:auto;padding:1.5rem 1.25rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.logo{font-size:1.5rem;font-weight:800}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mut{color:var(--mut)}
+.pill{display:inline-block;padding:.15rem .8rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.card{padding:1.4rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:.6rem 1rem;border-radius:.7rem;font:600 .88rem Inter,sans-serif;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px -14px var(--pri)}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}
+.btn.d{color:var(--bad)}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+input,select{padding:.65rem .9rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:inherit;min-width:0}
+.layout{display:grid;gap:1.2rem}
+@media(min-width:900px){.layout{grid-template-columns:270px 1fr;align-items:start}.tabs{position:sticky;top:1rem;flex-direction:column}}
+.tabs{display:flex;gap:.4rem;overflow-x:auto;padding:.5rem}
+.tab{flex:none;text-align:left;padding:.75rem 1rem;border-radius:.9rem;border:1px solid transparent;background:none;color:var(--mut);font:600 .92rem Inter,sans-serif;cursor:pointer;transition:background .2s}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected=true]{background:var(--fg);color:var(--bg)}
+.panel{animation:in .4s both}@keyframes in{from{opacity:0;transform:translateY(12px)}}
+h2{font-size:1.7rem;margin-bottom:1rem}
+.add{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem}.add input{flex:1 1 160px}
+.list{list-style:none;padding:0;display:grid;gap:.5rem}
+.item{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;border:1px solid var(--bd);border-radius:.9rem;flex-wrap:wrap;animation:in .35s both}
+.item b{flex:1 1 140px}
+.sw{border-radius:99px;padding:.25rem .8rem;font:700 .75rem Inter,sans-serif;border:0;cursor:pointer;background:var(--ok);color:#fff}
+.sw[data-off]{background:var(--bd);color:var(--mut)}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:520px}th,td{padding:.7rem .5rem;border-bottom:1px solid var(--bd);text-align:left;font-size:.92rem}th{color:var(--mut);font-weight:600}
+td input[type=checkbox]{width:20px;height:20px;accent-color:var(--pri)}
+td select{padding:.35rem .5rem;font-size:.85rem}
+tr.grp td{font-weight:700;color:var(--mut);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding-top:1rem}
+[hidden]{display:none!important}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.8rem;margin-bottom:1.2rem}
+.stats b{display:block;font-size:2rem;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}
+.chip{padding:.3rem .8rem;border-radius:99px;border:1px solid var(--bd);background:none;color:inherit;font:600 .8rem Inter,sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--pri);color:var(--onp);border-color:transparent}
+#feed{list-style:none;padding:0;display:grid;gap:.4rem;max-height:340px;overflow:auto}
+#feed li{display:flex;gap:.8rem;font-size:.92rem;animation:in .3s both}#feed time{color:var(--mut);min-width:4.5rem}
+.live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:.4rem;animation:pulse 1.6s infinite}@keyframes pulse{50%{opacity:.3}}
+.charts{display:grid;gap:1.2rem;margin-top:1rem}@media(min-width:760px){.charts{grid-template-columns:1fr 1fr}}
+.bars{display:flex;align-items:flex-end;gap:8px;height:170px;margin-top:.8rem}
+.bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:.7rem;color:var(--mut);text-align:center}
+.bars i{display:block;width:100%;border-radius:6px 6px 0 0;background:linear-gradient(var(--pri),var(--acc));transform-origin:bottom;animation:grow .7s both}@keyframes grow{from{transform:scaleY(0)}}
+#ts{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);opacity:0;z-index:150;padding:.8rem 1.2rem;border-radius:99px;background:var(--fg);color:var(--bg);transition:.3s;pointer-events:none}
+#ts.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="display:flex;align-items:center;gap:.8rem"><div class="logo disp">flow<span class="grad">Q</span></div><span class="pill">Administrator</span></div>
+    <div style="display:flex;gap:.5rem"><a class="btn" href="manager.html">Department view</a><button class="btn" id="theme" aria-label="Toggle dark and light mode">◐</button><button class="btn" id="out">Log out</button></div>
+  </div>
+  <div class="layout">
+    <nav class="glass tabs" role="tablist" aria-label="Administrator access" id="tabs"></nav>
+    <main>
+      <!-- 0 departments -->
+      <section class="glass card panel" id="p0"><h2>Manage departments</h2>
+        <form class="add" id="fd"><input id="dn" placeholder="New department name" aria-label="Department name"><select id="dplace" aria-label="Place"></select><button class="btn p">Add department</button></form><ul class="list" id="ld"></ul></section>
+      <!-- 1 users -->
+      <section class="glass card panel" id="p1" hidden><h2>Manage users</h2>
+        <form class="add" id="fu"><input id="un" placeholder="Full name" aria-label="Full name" autocomplete="off"><input id="ue" type="email" placeholder="Email" aria-label="Email" autocomplete="off"><input id="uw" type="password" placeholder="Temporary password (8+)" aria-label="Temporary password" autocomplete="new-password"><select id="ur" aria-label="Role"></select><select id="ud" aria-label="Department" hidden></select><button class="btn p">Add user</button></form>
+        <div class="tw"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Status</th><th></th></tr></thead><tbody id="lu"></tbody></table></div></section>
+      <!-- 2 services -->
+      <section class="glass card panel" id="p2" hidden><h2>Manage services</h2>
+        <form class="add" id="fs"><input id="sn" placeholder="Service name" aria-label="Service name"><select id="sd" aria-label="Department"></select><input id="sm" type="number" min="1" max="120" placeholder="Avg minutes" aria-label="Average minutes" style="flex:0 1 130px"><button class="btn p">Add service</button></form>
+        <div class="tw"><table><thead><tr><th>Service</th><th>Department</th><th>Avg time</th><th>Status</th><th></th></tr></thead><tbody id="ls"></tbody></table></div></section>
+      <!-- 3 permissions -->
+      <section class="glass card panel" id="p3" hidden><h2>Manage permissions</h2><p class="mut" style="margin-bottom:1rem">Tick what each role is allowed to do. Administrator always keeps full access.</p>
+        <div class="tw"><table id="lp"></table></div></section>
+      <!-- 4 activity -->
+      <section class="glass card panel" id="p4" hidden><h2>View organization-wide activity</h2>
+        <div class="stats" id="stats"></div>
+        <p><span class="live"></span><b>Live activity</b></p><div class="chips" id="chips" role="group" aria-label="Filter activity"></div><ul id="feed"></ul></section>
+      <!-- 5 reports -->
+      <section class="glass card panel" id="p5" hidden><h2>View reports and analytics</h2>
+        <div class="add"><select id="rng" aria-label="Date range"><option value="today">Today</option><option value="week">Last 7 days</option><option value="month">Last 30 days</option></select><button class="btn p" id="csv">Export CSV</button></div>
+        <div class="stats" id="rs"></div>
+        <div class="charts"><div class="glass card"><b>Queue length by hour</b><div class="bars" id="bh"></div></div><div class="glass card"><b>Average waiting time by department (min)</b><div class="bars" id="bd"></div></div></div></section>
+    </main>
+  </div>
+</div>
+<div id="ts" role="status"></div>
+<script src="js/api.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],esc=FQ.esc;
+function toast(t){const e=$('#ts');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2800)}
+const ROLES={customer:'Customer / Visitor',staff:'Service Staff',manager:'Department Manager',admin:'Administrator'};
+const NAMES=['Manage departments','Manage users','Manage services','Manage permissions','View organization-wide activity','View reports and analytics'];
+const PERM=['manage_departments','manage_users','manage_services','manage_permissions','view_org_activity','view_reports'];
+const CATS=['All','Departments','Users','Services','Permissions','Queue'];
+let U=null,tab=0,filter='All',DEPTS=[],USERS=[],busy=false;
+const needsDept=r=>r==='staff'||r==='manager';
+const deptOpts=(sel)=>`<option value="">Choose department</option>`+DEPTS.map(d=>`<option value="${d.id}" ${d.id===sel?'selected':''}>${esc(d.place)} · ${esc(d.name)}</option>`).join('');
+async function guarded(fn,msg){if(busy)return;busy=true;try{await fn();if(msg)toast(msg)}catch(e){toast(e.message)}finally{busy=false}}
+async function loadDepts(){const c=await FQ.api('/catalog');DEPTS=c.flatMap(p=>p.departments.map(d=>({id:d.id,name:d.name,place:p.name})))}
+
+/* ---------- tabs ---------- */
+function show(i){tab=i;$$('.tab').forEach(t=>t.setAttribute('aria-selected',String(+t.dataset.i===i)));$$('.panel').forEach((p,k)=>p.hidden=k!==i);
+ [renderDept,renderUsers,renderServ,renderPerm,renderAct,renderRep][i]().catch(e=>toast(e.message))}
+$('#tabs').onclick=e=>{const b=e.target.closest('.tab');if(b)show(+b.dataset.i)};
+
+/* ---------- departments ---------- */
+let DP=null;
+function drawDept(){$('#dplace').innerHTML=DP.places.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+ $('#ld').innerHTML=DP.departments.map(d=>`<li class="item"><b>${esc(d.name)}</b><span class="mut">${esc(d.place)} · ${d.services} services · ${d.people} staff</span><button class="sw" ${d.active?'':'data-off'} data-id="${d.id}" data-on="${d.active}" data-a="tg">${d.active?'Active':'Inactive'}</button><button class="btn d" data-id="${d.id}" data-n="${esc(d.name)}" data-a="del">Delete</button></li>`).join('')||'<li class="mut">No departments yet.</li>'}
+async function renderDept(){DP=await FQ.api('/admin/departments');drawDept()}
+$('#fd').onsubmit=e=>{e.preventDefault();const n=$('#dn').value.trim();if(n.length<2)return toast('Enter a department name');
+ guarded(async()=>{DP=await FQ.api('/admin/departments',{method:'POST',body:{name:n,place_id:+$('#dplace').value}});$('#dn').value='';drawDept();loadDepts()},'Department added')};
+$('#ld').onclick=e=>{const b=e.target.closest('button');if(!b)return;const id=b.dataset.id;
+ if(b.dataset.a==='tg')guarded(async()=>{DP=await FQ.api('/admin/departments/'+id,{method:'PATCH',body:{active:b.dataset.on!=='true'}});drawDept();loadDepts()});
+ else if(confirm(`Delete the department ${b.dataset.n}?`))guarded(async()=>{DP=await FQ.api('/admin/departments/'+id,{method:'DELETE'});drawDept();loadDepts()},'Department deleted')};
+
+/* ---------- users ---------- */
+$('#ur').innerHTML=Object.entries(ROLES).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+$('#ur').onchange=()=>{$('#ud').hidden=!needsDept($('#ur').value)};
+function drawUsers(){$('#ud').innerHTML=deptOpts(null);
+ $('#lu').innerHTML=USERS.map(u=>{const me=u.id===U.id;return `<tr><td>${esc(u.full_name)}${me?' <span class="mut">(you)</span>':''}</td><td>${esc(u.email)}</td>
+ <td><select data-id="${u.id}" data-a="role" aria-label="Role for ${esc(u.full_name)}" ${me?'disabled':''}>${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select></td>
+ <td>${needsDept(u.role)?`<select data-id="${u.id}" data-a="dept" aria-label="Department for ${esc(u.full_name)}">${deptOpts(u.department_id)}</select>`:'<span class="mut">—</span>'}</td>
+ <td><button class="sw" ${u.active?'':'data-off'} data-id="${u.id}" data-on="${u.active}" data-a="tg" ${me?'disabled':''}>${u.active?'Active':'Inactive'}</button></td>
+ <td>${me?'':`<button class="btn d" data-id="${u.id}" data-n="${esc(u.full_name)}" data-a="del">Remove</button>`}</td></tr>`}).join('')}
+async function renderUsers(){if(!DEPTS.length)await loadDepts();USERS=await FQ.api('/admin/users');drawUsers()}
+$('#fu').onsubmit=e=>{e.preventDefault();const n=$('#un').value.trim(),m=$('#ue').value.trim(),w=$('#uw').value,r=$('#ur').value,d=+$('#ud').value||null;
+ if(n.length<2)return toast('Enter the full name');if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m))return toast('Enter a valid email');if(w.length<8)return toast('The temporary password needs at least 8 characters');
+ if(needsDept(r)&&!d)return toast('Choose a department for this '+ROLES[r]);
+ guarded(async()=>{USERS=await FQ.api('/admin/users',{method:'POST',body:{full_name:n,email:m,password:w,role:r,department_id:needsDept(r)?d:null}});e.target.reset();$('#ud').hidden=true;drawUsers()},`Added ${n} as ${ROLES[r]}`)};
+$('#lu').onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=b.dataset.id;
+ if(b.dataset.a==='tg')guarded(async()=>{USERS=await FQ.api('/admin/users/'+id,{method:'PATCH',body:{active:b.dataset.on!=='true'}});drawUsers()});
+ else if(confirm(`Remove ${b.dataset.n}? They will no longer be able to log in.`))guarded(async()=>{USERS=await FQ.api('/admin/users/'+id,{method:'DELETE'});drawUsers()},'User removed')};
+$('#lu').onchange=e=>{const s=e.target.closest('select');if(!s)return;const id=s.dataset.id,u=USERS.find(x=>x.id===id);
+ let body;
+ if(s.dataset.a==='role'){const r=s.value;body={role:r};
+  if(needsDept(r)){const d=u.department_id||(DEPTS[0]&&DEPTS[0].id);if(!u.department_id){const pick=prompt('Department for this '+ROLES[r]+':\n'+DEPTS.map((x,i)=>`${i+1}. ${x.place} · ${x.name}`).join('\n'),'1');const k=+pick-1;if(!(k>=0&&DEPTS[k])){s.value=u.role;return toast('Role not changed: choose a department')}body.department_id=DEPTS[k].id}else body.department_id=d}
+  else body.department_id=null}
+ else body={department_id:+s.value||null};
+ guarded(async()=>{USERS=await FQ.api('/admin/users/'+id,{method:'PATCH',body});drawUsers()},'User updated').then(()=>{if(!busy)drawUsers()})};
+
+/* ---------- services ---------- */
+let SV=[];
+function drawServ(){$('#sd').innerHTML=DEPTS.map(d=>`<option value="${d.id}">${esc(d.place)} · ${esc(d.name)}</option>`).join('');
+ $('#ls').innerHTML=SV.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(s.department)}</td><td>${s.avg_minutes} min</td><td><button class="sw" ${s.active?'':'data-off'} data-id="${s.id}" data-on="${s.active}" data-a="tg">${s.active?'Available':'Unavailable'}</button></td><td><button class="btn d" data-id="${s.id}" data-n="${esc(s.name)}" data-a="del">Remove</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">No services yet.</td></tr>'}
+async function renderServ(){await loadDepts();SV=await FQ.api('/admin/services');drawServ()}
+$('#fs').onsubmit=e=>{e.preventDefault();const n=$('#sn').value.trim(),m=+$('#sm').value,d=+$('#sd').value;if(n.length<2)return toast('Enter a service name');if(!d)return toast('Add an active department first');if(!(m>=1&&m<=120))return toast('Average time must be 1 to 120 minutes');
+ guarded(async()=>{SV=await FQ.api('/admin/services',{method:'POST',body:{name:n,department_id:d,avg_minutes:m}});e.target.reset();drawServ()},`Added service ${n}`)};
+$('#ls').onclick=e=>{const b=e.target.closest('button');if(!b)return;const id=b.dataset.id;
+ if(b.dataset.a==='tg')guarded(async()=>{SV=await FQ.api('/admin/services/'+id,{method:'PATCH',body:{active:b.dataset.on!=='true'}});drawServ()});
+ else if(confirm(`Remove the service ${b.dataset.n}?`))guarded(async()=>{SV=await FQ.api('/admin/services/'+id,{method:'DELETE'});drawServ()},'Service removed')};
+
+/* ---------- permissions ---------- */
+let PM=null;
+function drawPerm(){const roles=PM.roles;let last='';
+ $('#lp').innerHTML=`<thead><tr><th>Permission</th>${roles.map(r=>`<th>${esc(r.label)}</th>`).join('')}</tr></thead><tbody>${PM.permissions.map(p=>{
+  const head=p.owner!==last?`<tr class="grp"><td colspan="${roles.length+1}">${esc(ROLES[p.owner])} abilities</td></tr>`:'';last=p.owner;
+  return head+`<tr><td>${esc(p.label)}</td>${roles.map(r=>{const on=PM.matrix[r.code].includes(p.code),lock=r.code==='admin'||(p.admin_only&&r.code!=='admin');
+   return `<td><input type="checkbox" data-r="${r.code}" data-p="${p.code}" aria-label="${esc(r.label)}: ${esc(p.label)}" ${on?'checked':''} ${lock?'disabled':''}></td>`}).join('')}</tr>`}).join('')}</tbody>`}
+async function renderPerm(){PM=await FQ.api('/admin/permissions');drawPerm()}
+$('#lp').onchange=e=>{const c=e.target;if(c.type!=='checkbox')return;
+ guarded(async()=>{PM=await FQ.api('/admin/permissions',{method:'PUT',body:{role:c.dataset.r,permission:c.dataset.p,allowed:c.checked}})},`${ROLES[c.dataset.r]}: ${c.checked?'allowed':'removed'}`).then(()=>{if(PM)drawPerm()})};
+
+/* ---------- activity (live) ---------- */
+$('#chips').innerHTML=CATS.map(c=>`<button class="chip" aria-pressed="${c==='All'}" data-c="${c}">${c}</button>`).join('');
+$('#chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;filter=b.dataset.c;$$('.chip').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderAct().catch(err=>toast(err.message))};
+async function renderAct(){const a=await FQ.api('/admin/activity?category='+filter),s=a.stats;
+ $('#stats').innerHTML=[[s.appointments_today,'Appointments today'],[s.walkins_today,'Walk-in tokens'],[s.waiting,'Currently waiting'],[s.active_counters,'Active counters'],[s.avg_wait+' min','Average waiting time']].map(x=>`<div class="glass card"><b class="disp">${x[0]}</b><span class="mut">${x[1]}</span></div>`).join('');
+ $('#feed').innerHTML=a.feed.map(x=>`<li><time>${FQ.time(x.created_at)}</time><span>${esc(x.message)}</span></li>`).join('')||'<li class="mut">No activity for this filter.</li>'}
+
+/* ---------- reports ---------- */
+const bars=(a)=>{const mx=Math.max(...a.map(x=>x.value),1);return a.map(x=>`<div><span>${x.value}</span><i style="height:${x.value/mx*80}%"></i><span>${esc(x.label)}</span></div>`).join('')||'<p class="mut">No data.</p>'};
+async function renderRep(){const d=await FQ.api('/admin/reports?range='+$('#rng').value);
+ $('#rs').innerHTML=d.metrics.map(x=>`<div class="glass card"><b class="disp">${esc(x.value)}</b><span class="mut">${esc(x.label)}</span></div>`).join('');
+ $('#bh').innerHTML=bars(d.hours);$('#bd').innerHTML=bars(d.departments)}
+$('#rng').onchange=()=>renderRep().catch(e=>toast(e.message));
+$('#csv').onclick=()=>guarded(async()=>{const r=await FQ.api('/admin/reports.csv?range='+$('#rng').value,{raw:true});
+ const a=document.createElement('a');a.href=URL.createObjectURL(await r.blob());a.download='flowQ-report-'+$('#rng').value+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)},'Report exported as CSV');
+
+$('#theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=getComputedStyle(r).getPropertyValue('--mode').trim()==='dark'?'light':'dark'};
+$('#out').onclick=()=>FQ.logout();
+(async()=>{U=await FQ.guard();
+ const allowed=PERM.map(p=>FQ.can(U,p));
+ $('#tabs').innerHTML=NAMES.map((n,i)=>allowed[i]?`<button class="tab" role="tab" aria-selected="false" data-i="${i}">${n}</button>`:'').join('');
+ const first=allowed.indexOf(true);
+ if(first<0){location.replace(U.home);return}
+ if(U.role!=='admin')document.querySelector('.pill').textContent=ROLES[U.role];
+ show(first);
+ FQ.poll(()=>tab===4?renderAct():null,5000)})();
+</script>
+</body>
+</html>

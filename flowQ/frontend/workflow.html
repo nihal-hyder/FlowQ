@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>flowQ for Banks — Appointment & Digital Queue Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* flowQ design tokens */
+:root{--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--warn:#F5A524;--bad:#E5484D;--ok:#2FA66A;--onp:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}}
+:root[data-theme="dark"]{--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;transition:background .4s}
+h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.035em;line-height:1}
+h2{font-size:clamp(2.1rem,6vw,4rem);font-weight:800}
+.wrap{max-width:1120px;margin:auto;padding:0 1.25rem}
+section{padding:6rem 0;position:relative;overflow:hidden}
+.mut{color:var(--mut)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;border-radius:.7rem;font:600 .95rem Inter,sans-serif;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}.btn.g{background:var(--acc);color:#fff;border-color:transparent}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{display:inline-block;padding:.15rem .7rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35;animation:float 14s ease-in-out infinite alternate;z-index:0}
+.b1{width:420px;height:420px;background:var(--pri);top:-100px;left:-120px}.b2{width:340px;height:340px;background:var(--acc);bottom:-80px;right:-80px;animation-delay:-6s}
+@keyframes float{to{transform:translate3d(50px,30px,0) scale(1.12)}}
+.in{position:relative;z-index:1}
+.tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.8rem 0}
+.tab{padding:.6rem 1.1rem;border-radius:99px;border:1px solid var(--bd);background:none;color:var(--fg);cursor:pointer;font:600 .95rem Inter,sans-serif}
+.tab[aria-selected=true]{background:var(--fg);color:var(--bg)}
+.panel{display:none}.panel.on{display:block;animation:pin .4s}@keyframes pin{from{opacity:0;transform:translateY(10px)}}
+.two{display:grid;gap:1.25rem;grid-template-columns:1fr 1fr}@media(max-width:820px){.two{grid-template-columns:1fr}}
+.card{padding:1.6rem}
+/* status pipeline */
+.pipe{display:flex;flex-wrap:wrap;gap:.4rem;margin:1rem 0}
+.st{padding:.35rem .8rem;border-radius:99px;border:1px solid var(--bd);font-size:.82rem;font-weight:600;color:var(--mut)}
+.st.done{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok);border-color:transparent}
+.st.now{background:var(--pri);color:var(--onp);border-color:transparent}
+.other{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
+.other .btn{padding:.45rem .9rem;font-size:.85rem}
+.flag{margin-top:.9rem;padding:.7rem 1rem;border-radius:.8rem;background:color-mix(in srgb,var(--warn) 20%,transparent);font-weight:600;display:none}.flag.on{display:block}
+/* the 12-step flow is a real sequence, so it is numbered */
+ol.flow{list-style:none;padding:0;counter-reset:s}
+ol.flow li{counter-increment:s;display:flex;gap:.8rem;align-items:flex-start;padding:.55rem 0;color:var(--mut);transition:color .3s}
+ol.flow li>div{flex:1;min-width:0;padding-top:2px}
+.opts{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.5rem}
+.opt{padding:.5rem .95rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:600 .88rem Inter,sans-serif;cursor:pointer}
+.opt:hover:not([disabled]){border-color:var(--pri)}.opt[disabled]{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+.val{font-weight:600;color:var(--fg)}.chg{background:none;border:0;color:var(--pri);cursor:pointer;font:600 .8rem Inter,sans-serif;margin-left:.5rem;text-decoration:underline}
+.stf{font-size:.75rem;font-weight:600;color:var(--acc);margin-left:.4rem}
+ol.flow li::before{content:counter(s);flex:0 0 28px;height:28px;border-radius:50%;border:1px solid var(--bd);display:grid;place-items:center;font-size:.8rem;font-weight:600}
+ol.flow li.done{color:var(--fg)}ol.flow li.done::before{content:"✓";background:var(--ok);color:#fff;border-color:transparent}
+ol.flow li.now{color:var(--fg);font-weight:600}ol.flow li.now::before{background:var(--pri);color:var(--onp);border-color:transparent}
+/* token */
+select{width:100%;padding:.8rem 1rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:inherit}
+label{display:block;margin:.8rem 0 .2rem;font-size:.85rem;font-weight:600}
+.tok{font-size:4.4rem;font-weight:800}
+.bar{height:8px;border-radius:9px;background:var(--bd);overflow:hidden;margin:.9rem 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),var(--acc));transition:width .6s}
+.kv{display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--bd)}.kv b{font-variant-numeric:tabular-nums}
+.empty{padding:2rem 1rem;text-align:center}
+.place{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--bd)}
+.tag{border-radius:99px;padding:.15rem .7rem;font-size:.75rem;font-weight:700;white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}.tag.no{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.th{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:50}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<button class="btn th glass" id="th" aria-label="Toggle dark and light mode">◐</button>
+<a class="btn th glass" href="index.html#portals" style="right:76px">My portal</a>
+
+<section id="workflow"><div class="blob b1"></div><div class="blob b2"></div>
+<div class="wrap in">
+  <span class="pill" id="pl0">Appointment & digital queue workflow</span>
+  <h2 style="margin:1rem 0 .8rem;max-width:14ch">Book ahead, or <span class="grad">just walk in.</span></h2>
+  <p class="mut" style="max-width:36rem" id="intro">flowQ supports scheduled appointments and walk-in digital tokens.</p>
+  <div class="flag" id="auth" style="max-width:40rem"></div>
+
+  <div class="tabs" role="tablist" aria-label="Visit type">
+    <button class="tab" role="tab" aria-selected="true" data-p="0">Scheduled appointment</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="1">Walk-in digital token</button>
+  </div>
+
+  <!-- Scheduled appointment -->
+  <div class="panel on"><div class="two">
+    <div class="glass card"><h3 style="font-size:1.4rem">Book your appointment</h3>
+      <ol class="flow" id="flow" style="margin-top:1rem"></ol></div>
+    <div class="glass card"><span class="pill">Appointment status</span>
+      <div class="pipe" id="pipe" aria-live="polite"></div>
+      <div class="kv" style="margin-top:.6rem"><span class="mut">Appointment number</span><b id="apn">Not issued yet</b></div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem"><button class="btn" id="rs">Start over</button></div>
+      <p class="mut" style="margin-top:1.2rem;font-size:.85rem">Other possible statuses</p>
+      <div class="other"><button class="btn" data-o="Cancelled">Cancelled</button><button class="btn" data-o="Missed">Missed</button><button class="btn" data-o="Rescheduled">Rescheduled</button><button class="btn" data-o="Delayed">Delayed</button></div>
+      <div class="flag" id="flag" role="status"></div></div>
+  </div></div>
+
+  <!-- Walk-in -->
+  <div class="panel"><div class="two">
+    <div class="glass card"><h3 style="font-size:1.4rem" id="whead">A customer arrives without an appointment</h3>
+      <label for="svc">Service</label>
+      <select id="svc"></select>
+      <button class="btn p" id="gen" style="margin-top:1rem">Get walk-in token</button>
+      <div class="flag" id="werr" role="status"></div>
+      <div id="empty" class="empty mut">Pick a service and get a token. Your place in line appears here.</div>
+      <div id="tk" style="display:none;margin-top:1rem">
+        <span class="pill" id="tsvc"></span><div class="tok disp" id="tn"></div>
+        <div class="kv"><span class="mut">Current token</span><b id="cur">—</b></div>
+        <div class="kv"><span class="mut">People ahead</span><b id="ah">0</b></div>
+        <div class="kv"><span class="mut">Estimated waiting time</span><b id="eta">—</b></div>
+        <div class="bar"><i id="bar" style="width:0"></i></div>
+        <p id="msg" aria-live="polite" style="font-weight:600"></p>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem"><button class="btn g" id="lv">Leave queue</button><button class="btn" id="rf">Refresh</button></div></div></div>
+
+    <div class="glass card"><span class="pill">Wait nearby</span>
+      <h3 style="font-size:1.4rem;margin:.6rem 0 .3rem">Restaurants and coffee shops close by</h3>
+      <p class="mut" style="font-size:.9rem">Walking times are checked against your wait, so you only see what you can reach and still get back before you are called.</p>
+      <div id="pl" style="margin-top:.8rem"></div>
+      <p class="mut" style="font-size:.8rem;margin-top:.8rem">Sample places for this demo. In the live product they come from a maps service near the department.</p></div>
+  </div></div>
+</div></section>
+
+
+
+<script src="js/api.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],E=FQ.esc;
+try{const t=localStorage.getItem('fq-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+$('#th').onclick=()=>{const d=document.documentElement,n=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('fq-theme',n)}catch(e){}};
+const tabTo=i=>{$$('.tab').forEach(x=>x.setAttribute('aria-selected',String(+x.dataset.p===i)));$$('.panel').forEach((p,k)=>p.classList.toggle('on',k===i))};
+$$('.tab').forEach(t=>t.onclick=()=>tabTo(+t.dataset.p));
+const Q=new URLSearchParams(location.search);
+let PLACE=null,DEPTS=[],ME=null,canAct=false;
+const who=()=>PLACE&&PLACE.slug==='clinics'?'patient':'customer';
+function flag(el,msg){const f=$(el);f.textContent=msg||'';f.classList.toggle('on',!!msg)}
+
+/* ---- Scheduled appointment: each step is a real API action ---- */
+const sts=['Booked','Confirmed','Checked In','Waiting','In Service','Completed'];
+const ACTIVE=['Booked','Confirmed','Rescheduled','Delayed'],ENDED=['Cancelled','Missed'];
+const isoDay=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const DATES=Array.from({length:7},(_,n)=>{const d=new Date();d.setDate(d.getDate()+n);return{iso:isoDay(d),label:n===0?'Today':d.toLocaleDateString('en',{weekday:'short',day:'numeric',month:'short'})}});
+let d=0,sel={},AV=null,appt=null,resch=false,busy=false,stopA=null;
+const labels=()=>['Select your department','Select your service','Choose an available date','Choose a time slot','Check availability',resch?'Confirm the new time':'Confirm your appointment','Get your appointment number','Choose how to get your reminder','Check in on arrival',`Call the ${who()}`,'Complete the service','Mark appointment complete'];
+const opt=(k,v,t,dis)=>`<button class="opt" data-k="${k}" data-v="${E(v)}" ${dis?'disabled':''}>${E(t)}</button>`;
+const act=(a,t,c)=>`<div class="opts"><button class="btn ${c||'p'}" data-act="${a}" ${busy?'disabled':''}>${t}</button></div>`;
+const tk=()=>appt&&appt.ticket;
+function ctl(i){
+ if(i===0)return `<div class="opts">${DEPTS.map(x=>opt('dept',x.id,x.name)).join('')||'<span class="mut">No departments open.</span>'}</div>`;
+ if(i===1)return `<div class="opts">${sel.dept.services.map(x=>opt('svc',x.id,x.name)).join('')||'<span class="mut">No services available.</span>'}</div>`;
+ if(i===2)return `<div class="opts">${DATES.map(x=>opt('date',x.iso,x.label)).join('')}</div>`;
+ if(i===3){if(!AV)return '<div class="opts mut">Loading slots…</div>';
+  if(!AV.active)return '<div class="opts mut">This department is not taking bookings right now.</div>';
+  if(AV.limit_reached)return '<div class="opts mut">The daily appointment limit is reached for this day. Pick another date.</div>';
+  return `<div class="opts">${AV.slots.map(x=>opt('slot',x.start,`${x.label} · ${x.past?'Past':x.full?'Full':x.booked+'/'+x.capacity}`,!x.available)).join('')||'<span class="mut">No slots on this day.</span>'}</div>`}
+ if(i===4)return act('chk','Check availability');
+ if(i===5)return act('cfm',resch?'Confirm new time':'Confirm appointment');
+ if(i===6)return act('num','Get appointment number');
+ if(i===7)return `<div class="opts">${['Email','SMS','In-app alert'].map(x=>opt('rem',x,x)).join('')}</div>`;
+ if(i===8){const o=new Date(appt.check_in_opens_at);
+  return act('chin','Check in')+(appt.can_check_in?'':`<p class="mut" style="font-size:.85rem;margin-top:.4rem">Check-in opens ${o.toLocaleString('en',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}, one hour before your slot.</p>`)}
+ const t=tk();
+ if(i===9)return `<p class="mut" style="margin-top:.3rem">Token <b>${E(t?t.token:'')}</b> · ${t?(t.ahead?t.ahead+' ahead of you':'you are next'):''}. Waiting for staff to call you…</p>`;
+ if(i===10)return `<p class="mut" style="margin-top:.3rem">${E(t?t.message:'')}</p>`;
+ return ''}
+function sum(i){const t=tk();return [sel.dept&&sel.dept.name,sel.svc&&sel.svc.name,sel.date&&sel.date.label,sel.slot&&sel.slot.label,'Slot available',resch?'New time confirmed':'Confirmed',
+ 'Number '+(appt&&appt.code),'Reminder by '+(appt&&appt.reminder||'In-app alert'),'Checked in · token '+(t&&t.token),`Called to ${t&&t.counter||'the counter'}`,'Service completed','Appointment complete'][i]}
+function stage(){if(!appt)return d>=5?0:-1;const s=appt.status,t=tk();
+ if(s==='Completed')return 5;if(s==='In Service'||(t&&['called','serving'].includes(t.status)))return 4;
+ if(s==='Waiting'||s==='Checked In')return 3;if(ACTIVE.includes(s))return 1;return -1}
+function stepFromAppt(){const s=appt.status,t=tk();
+ if(s==='Completed')return 12;if(t&&['called','serving'].includes(t.status))return 10;if(s==='Waiting'||s==='Checked In')return 9;return null}
+function drawA(){
+ const live=!appt||!ENDED.includes(appt.status),L=labels();
+ $('#flow').innerHTML=L.map((l,i)=>{const dn=i<d,nw=i===d,chg=i<4&&live&&(!appt||resch)&&!(resch&&i<2);
+  return `<li class="${dn?'done':nw?'now':''}"><div>${dn?`${l}: <span class="val">${E(sum(i))}</span>${chg?`<button class="chg" data-back="${i}">Change</button>`:''}`:nw?`${l}${i>=9?'<span class="stf">Staff action</span>':''}${canAct&&live?ctl(i):''}`:l}</div></li>`}).join('');
+ const si=stage();
+ $('#pipe').innerHTML=sts.map((x,i)=>`<span class="st ${i<si||(si===5&&i===5)?'done':i===si?'now':''}">${x}</span>`).join('<span class="mut" aria-hidden="true">→</span>');
+ $('#apn').textContent=appt&&(d>=7||resch)?appt.code+(ENDED.includes(appt.status)?' ('+appt.status.toLowerCase()+')':''):'Not issued yet'}
+async function loadSlots(){AV=null;drawA();
+ try{AV=await FQ.api(`/departments/${sel.dept.id}/availability?date=${sel.date.iso}`)}catch(e){flag('#flag',e.message);d=2}drawA()}
+async function run(fn,onFail){if(busy)return;busy=true;flag('#flag','');drawA();
+ try{await fn()}catch(e){flag('#flag',e.message);if(onFail)await onFail(e)}finally{busy=false;drawA()}}
+function watch(){if(stopA)stopA();
+ stopA=FQ.poll(async()=>{appt=await FQ.api(`/appointments/${appt.id}`);const s=stepFromAppt();if(s!==null)d=s;drawA();
+  if(['Completed',...ENDED].includes(appt.status)){stopA();stopA=null}},5000)}
+$('#flow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||busy)return;
+ if(b.dataset.back){const k=+b.dataset.back;d=k;if(k<=3)delete sel.slot;if(k<=2)delete sel.date;if(k<=1)delete sel.svc;if(k===0)delete sel.dept;flag('#flag','');drawA();return}
+ const k=b.dataset.k,v=b.dataset.v;
+ if(k==='dept'){sel={dept:DEPTS.find(x=>x.id===+v)};d=1;drawA();return}
+ if(k==='svc'){sel.svc=sel.dept.services.find(x=>x.id===+v);d=2;drawA();return}
+ if(k==='date'){sel.date=DATES.find(x=>x.iso===v);d=3;loadSlots();return}
+ if(k==='slot'){sel.slot=AV.slots.find(x=>x.start===v);d=4;drawA();return}
+ if(k==='rem')return run(async()=>{appt=await FQ.api(`/appointments/${appt.id}/reminder`,{method:'PATCH',body:{reminder:v}});d=8});
+ const a=b.dataset.act,back=async()=>{d=3;delete sel.slot;await loadSlots()};
+ if(a==='chk')return run(async()=>{AV=await FQ.api(`/departments/${sel.dept.id}/availability?date=${sel.date.iso}`);
+  const s=AV.slots.find(x=>x.start===sel.slot.start);if(!s||!s.available){flag('#flag','That slot is no longer available. Please choose another time.');d=3;delete sel.slot}else d=5});
+ if(a==='cfm')return run(async()=>{
+  if(resch){appt=await FQ.api(`/appointments/${appt.id}/reschedule`,{method:'POST',body:{date:sel.date.iso,slot_start:sel.slot.start}});
+   resch=false;d=appt.reminder?8:7;flag('#flag',`Rescheduled: ${appt.code} is now on ${FQ.day(appt.date)}, ${appt.slot_label}.`)}
+  else{appt=await FQ.api('/appointments',{method:'POST',body:{service_id:sel.svc.id,date:sel.date.iso,slot_start:sel.slot.start}});d=6}},back);
+ if(a==='num'){d=7;drawA();return}
+ if(a==='chin')return run(async()=>{appt=await FQ.api(`/appointments/${appt.id}/check-in`,{method:'POST'});d=stepFromAppt()??9;watch()},
+  async()=>{try{appt=await FQ.api(`/appointments/${appt.id}`)}catch(e){}});
+});
+function startOver(){if(stopA){stopA();stopA=null}appt=null;resch=false;AV=null;flag('#flag','');
+ const dep=DEPTS.find(x=>x.id===+Q.get('dept'));sel=dep?{dept:dep}:{};d=dep?1:0;drawA()}
+$('#rs').onclick=startOver;
+const notes={Cancelled:'Cancelled. The slot is released for someone else.',Missed:`Missed. The ${'customer'} did not check in, and the slot is freed.`,Rescheduled:'Rescheduled. Pick a new date and time to keep your place.',Delayed:`Delayed. The appointment is running late and the ${'customer'} is notified.`};
+$$('[data-o]').forEach(b=>b.onclick=async()=>{const o=b.dataset.o;
+ if(o==='Cancelled'&&appt&&appt.can_cancel&&canAct){if(!confirm(`Cancel appointment ${appt.code}? The slot will be released.`))return;
+  return run(async()=>{appt=await FQ.api(`/appointments/${appt.id}/cancel`,{method:'POST'});if(stopA){stopA();stopA=null}flag('#flag',notes.Cancelled+' Press "Start over" to book again.')})}
+ if(o==='Rescheduled'&&appt&&appt.can_reschedule&&canAct){resch=true;d=2;delete sel.date;delete sel.slot;flag('#flag',notes.Rescheduled);drawA();return}
+ flag('#flag',notes[o].replace(/customer/g,who()))});
+
+/* ---- Walk-in token: real queue position, polled live ---- */
+let ticket=null,stopW=null;
+const places=[['Campus Café','Coffee',3],['Green Bean','Coffee',5],['Spice Corner','Restaurant',8],['Lunchbox Kitchen','Restaurant',12]];
+function drawW(){
+ if(!ticket){$('#tk').style.display='none';$('#empty').style.display='block'}
+ else{const t=ticket;$('#empty').style.display='none';$('#tk').style.display='block';
+  $('#tsvc').textContent=`${t.department} · ${t.service}`;$('#tn').textContent=t.token;$('#cur').textContent=t.now_serving||'—';$('#ah').textContent=t.ahead;
+  $('#eta').textContent=t.status!=='waiting'?'Now':t.eta_minutes===null?'Waiting for a counter to open':t.eta_minutes+' minutes';
+  $('#bar').style.width=(t.status==='waiting'?Math.max(6,100/(t.ahead+1)):100)+'%';$('#msg').textContent=t.message;
+  $('#lv').hidden=t.status!=='waiting';$('#gen').disabled=['waiting','called','serving'].includes(t.status)}
+ const eta=ticket&&ticket.status==='waiting'?(ticket.eta_minutes??0):null,called=ticket&&['called','serving'].includes(ticket.status);
+ $('#pl').innerHTML=places.map(([n,k,w])=>{const spare=eta===null?null:eta-w*2-5,ok=spare>0;
+  const tag=!ticket||['completed','cancelled','no_show'].includes(ticket.status)?'<span class="tag" style="background:var(--bd)">Get a token first</span>'
+   :`<span class="tag ${ok?'ok':'no'}">${ok?'Time to stay '+spare+' min':called?'Go to counter':'Too close to your turn'}</span>`;
+  return `<div class="place"><div><b>${n}</b><div class="mut" style="font-size:.85rem">${k}, ${w} min walk</div></div>${tag}</div>`}).join('')}
+let lastW=null;
+function follow(t){ticket=t;drawW();if(stopW)stopW();
+ stopW=FQ.poll(async()=>{ticket=await FQ.api(`/queue/tickets/${ticket.id}`);
+  if(ticket.status==='called'&&lastW!=='called'){flag('#werr',`It's your turn! ${ticket.token}, please go to ${ticket.counter}.`);try{speechSynthesis.speak(new SpeechSynthesisUtterance(`Token ${ticket.token.replace('-',' ')}, please go to ${ticket.counter}`))}catch(e){}}
+  lastW=ticket.status;drawW();if(['completed','cancelled','no_show'].includes(ticket.status)){stopW();stopW=null;$('#gen').disabled=false}},5000)}
+$('#gen').onclick=async()=>{if(!canAct)return;const b=$('#gen');b.disabled=true;flag('#werr','');
+ try{follow(await FQ.api('/queue/join',{method:'POST',body:{service_id:+$('#svc').value}}))}
+ catch(e){flag('#werr',e.message);b.disabled=false;if(e.status===409)loadMine()}};
+$('#rf').onclick=async()=>{if(!ticket)return;try{ticket=await FQ.api(`/queue/tickets/${ticket.id}`);drawW()}catch(e){flag('#werr',e.message)}};
+$('#lv').onclick=async()=>{if(!ticket||!confirm(`Leave the queue? Token ${ticket.token} will be cancelled.`))return;
+ try{ticket=await FQ.api(`/queue/tickets/${ticket.id}/cancel`,{method:'POST'});if(stopW){stopW();stopW=null}drawW();$('#gen').disabled=false}catch(e){flag('#werr',e.message)}};
+async function loadMine(){const dep=+Q.get('dept');const mine=await FQ.api('/queue/my');const t=mine.find(x=>!dep||x.department_id===dep);if(t){lastW=t.status;follow(t)}}
+
+/* ---- start ---- */
+(async function init(){
+ let cat;try{cat=await FQ.api('/catalog')}catch(e){flag('#auth',e.message);return}
+ const depId=+Q.get('dept');
+ PLACE=cat.find(p=>p.slug===Q.get('place'))||cat.find(p=>p.departments.some(x=>x.id===depId))||cat[0];
+ DEPTS=PLACE.departments;
+ $('#pl0').textContent=`${PLACE.name} · Appointment & digital queue workflow`;
+ $('#whead').textContent=`A ${who()} arrives without an appointment`;
+ const dep=DEPTS.find(x=>x.id===depId);
+ $('#intro').textContent=dep?`${dep.name} · open ${dep.open_time}–${dep.close_time}. Book a time slot, or join the live queue now.`:'Book a time slot, or join the live queue now.';
+ const groups=(dep?[dep]:DEPTS).filter(x=>x.services.length);
+ $('#svc').innerHTML=groups.length===1?groups[0].services.map(s=>`<option value="${s.id}">${E(s.name)}</option>`).join('')
+  :groups.map(g=>`<optgroup label="${E(g.name)}">${g.services.map(s=>`<option value="${s.id}">${E(s.name)}</option>`).join('')}</optgroup>`).join('');
+ startOver();
+ if(Q.get('mode')==='walkin')tabTo(1);
+ if(FQ.loggedIn()){try{ME=await FQ.me()}catch(e){ME=null}}
+ canAct=!!ME&&ME.role==='customer';
+ if(!canAct){const next=encodeURIComponent('workflow.html'+location.search);
+  $('#auth').innerHTML=ME?`You are logged in as ${E(ME.full_name)}. Booking and walk-in tokens are for customer accounts. <a href="${E(ME.home)}">Open your dashboard</a>.`
+   :`Please <a href="index.html?login=1&next=${next}">log in</a> (or create an account there) to book an appointment or get a token.`;
+  $('#auth').classList.add('on');$('#gen').disabled=true;drawA();drawW();return}
+ drawA();drawW();
+ const rid=Q.get('reschedule');
+ if(rid){try{appt=await FQ.api(`/appointments/${rid}`);tabTo(0);
+  const dp=DEPTS.find(x=>x.id===appt.department_id)||{id:appt.department_id,name:appt.department,services:[]};
+  sel={dept:dp,svc:{id:appt.service_id,name:appt.service}};
+  if(appt.can_reschedule){resch=true;d=2;flag('#flag',`Rescheduling ${appt.code} (now ${FQ.day(appt.date)}, ${appt.slot_label}). Pick a new date and time.`)}
+  else{d=stepFromAppt()??8;flag('#flag',`Appointment ${appt.code} is ${appt.status.toLowerCase()}, so it can't be rescheduled.`)}
+  drawA()}catch(e){flag('#flag',e.message)}}
+ loadMine().catch(()=>{})})();
+</script>
+</body>
+</html>

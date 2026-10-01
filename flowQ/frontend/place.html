@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>flowQ — Choose your place</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* flowQ design tokens */
+:root{--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--ok:#2FA66A;--onp:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}}
+:root[data-theme="dark"]{--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--ok:#5FD29B;--onp:#14102B}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;transition:background .4s}
+h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.035em;line-height:1}
+h2{font-size:clamp(2.1rem,6vw,4rem);font-weight:800}
+.wrap{max-width:1120px;margin:auto;padding:0 1.25rem}
+section{padding:6rem 0;position:relative;overflow:hidden}
+.mut{color:var(--mut)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;border-radius:.7rem;font:600 .95rem Inter,sans-serif;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}.btn[disabled]{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.pill{display:inline-block;padding:.15rem .7rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35;animation:float 14s ease-in-out infinite alternate;z-index:0}
+.b1{width:420px;height:420px;background:var(--pri);top:-100px;left:-120px}.b2{width:340px;height:340px;background:var(--acc);bottom:-80px;right:-80px;animation-delay:-6s}
+@keyframes float{to{transform:translate3d(50px,30px,0) scale(1.12)}}
+.in{position:relative;z-index:1}
+.three{display:grid;gap:1.25rem;grid-template-columns:repeat(3,1fr);margin-top:2.2rem}@media(max-width:820px){.three{grid-template-columns:1fr}}
+/* option cards are radio buttons */
+.place{display:block;text-align:left;width:100%;padding:1.6rem;cursor:pointer;color:var(--fg);font:inherit;transition:transform .25s,box-shadow .25s,border-color .25s}
+.place:hover{transform:translateY(-4px);box-shadow:0 20px 50px -22px var(--pri)}
+.place[aria-checked=true]{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri),0 20px 50px -22px var(--pri)}
+.ico{width:52px;height:52px;border-radius:1rem;display:grid;place-items:center;background:var(--pri);color:var(--onp);font-size:1.5rem;margin-bottom:1.1rem}
+.place h3{font-size:1.5rem;margin-bottom:.4rem}
+.tick{float:right;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bd);display:grid;place-items:center;font-size:.8rem;color:transparent}
+.place[aria-checked=true] .tick{background:var(--ok);border-color:transparent;color:#fff}
+/* departments */
+.dep{margin-top:1.5rem;padding:1.6rem;display:none}.dep.on{display:block;animation:pin .4s}@keyframes pin{from{opacity:0;transform:translateY(10px)}}
+.seg{display:flex;flex-wrap:wrap;gap:.5rem;margin:.9rem 0 1.2rem}
+.opt{padding:.55rem 1rem;border-radius:99px;border:1px solid var(--bd);background:none;color:var(--fg);font:600 .9rem Inter,sans-serif;cursor:pointer}
+.opt[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+#ok{margin-top:1rem;font-weight:600;color:var(--ok);min-height:1.5rem}
+.th{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:12px;z-index:50}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<button class="btn th glass" id="th" aria-label="Toggle dark and light mode">◐</button>
+
+<section id="place"><div class="blob b1"></div><div class="blob b2"></div>
+<div class="wrap in">
+  <span class="pill">Get started</span>
+  <h2 style="margin:1rem 0 .8rem;max-width:14ch">Where are you <span class="grad">visiting?</span></h2>
+  <p class="mut" style="max-width:36rem">Choose your place and flowQ shows the departments and services you can book or queue for.</p>
+
+  <div class="three" role="radiogroup" aria-label="Choose your place" id="grp"><p class="mut">Loading places…</p></div>
+
+  <div class="glass dep" id="dep" aria-live="polite">
+    <h3 class="disp" id="dt" style="font-size:1.5rem"></h3>
+    <div class="seg" id="ds" role="group" aria-label="Choose a department"></div>
+    <button class="btn p" id="go" disabled>Continue</button>
+    <p id="ok" role="status"></p>
+  </div>
+</div></section>
+
+<script src="js/api.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],E=FQ.esc;
+try{const t=localStorage.getItem('fq-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+$('#th').onclick=()=>{const d=document.documentElement,n=d.dataset.theme==='dark'?'light':'dark';d.dataset.theme=n;try{localStorage.setItem('fq-theme',n)}catch(e){}};
+const mode=new URLSearchParams(location.search).get('mode')==='walkin'?'walkin':'book';
+let P=[],pl=-1,dp=null;
+FQ.api('/catalog').then(c=>{P=c;
+ $('#grp').innerHTML=P.map((p,i)=>`<button class="glass place" role="radio" aria-checked="false" data-i="${i}"><span class="tick" aria-hidden="true">✓</span><div class="ico" aria-hidden="true">${E(p.icon)}</div><h3 class="disp">${E(p.name)}</h3><p class="mut">${E(p.description)}</p></button>`).join('')})
+ .catch(e=>{$('#grp').innerHTML=`<p class="mut">${E(e.message)}</p>`});
+$('#grp').addEventListener('click',e=>{const b=e.target.closest('.place');if(!b)return;pl=+b.dataset.i;dp=null;
+ $$('.place').forEach(x=>x.setAttribute('aria-checked',x===b));
+ $('#dt').textContent='Choose a department at '+P[pl].name.toLowerCase();
+ $('#ds').innerHTML=P[pl].departments.map(d=>`<button class="opt" aria-pressed="false" data-id="${d.id}">${E(d.name)}</button>`).join('')||'<p class="mut">No departments are open here right now.</p>';
+ $('#dep').classList.add('on');$('#go').disabled=true;$('#ok').textContent=''});
+$('#grp').addEventListener('keydown',e=>{if(!['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(e.key)||!P.length)return;e.preventDefault();
+ const n=(+(document.activeElement.dataset.i||0)+(/Right|Down/.test(e.key)?1:P.length-1))%P.length,b=$$('.place')[n];b.focus();b.click()});
+$('#ds').addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b)return;dp=+b.dataset.id;
+ $$('.opt').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#go').disabled=false;$('#ok').textContent=''});
+$('#go').onclick=()=>{$('#ok').textContent='Opening…';location.href=`workflow.html?place=${encodeURIComponent(P[pl].slug)}&dept=${dp}&mode=${mode}`};
+</script>
+</body>
+</html>

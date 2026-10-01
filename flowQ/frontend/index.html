@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>flowQ — Digital Queue & Appointment Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<style>
+/* ===== Design tokens (3 main colours + emerald accent) ===== */
+:root{--mode:light;--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--warn:#F5A524;--bad:#E5484D;--onp:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--mode:dark;--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}}
+:root[data-theme="dark"]{--mode:dark;--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.6 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;transition:background .4s}
+h1,h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.035em;line-height:1}
+h2{font-size:clamp(2.1rem,6vw,4rem);font-weight:800}
+.wrap{max-width:1120px;margin:auto;padding:0 1.25rem}
+section{padding:6rem 0}
+.mut{color:var(--mut)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.4rem;border-radius:.7rem;font-weight:600;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer;font-size:.95rem}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}
+.btn.g{background:var(--acc);color:#fff;border-color:transparent}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.sr{position:absolute;left:-999px}
+/* header */
+header{position:sticky;top:0;z-index:40;padding-top:env(safe-area-inset-top,0px);backdrop-filter:blur(12px);background:color-mix(in srgb,var(--bg) 70%,transparent);border-bottom:1px solid var(--bd)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+nav a{margin-right:1.2rem;font-size:.9rem;color:var(--mut);text-decoration:none}
+nav a:hover{color:var(--fg)}
+/* hero */
+.hero{position:relative;min-height:92vh;display:flex;align-items:center;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.45;animation:float 14s ease-in-out infinite alternate}
+.b1{width:480px;height:480px;background:var(--pri);top:-120px;left:-100px}
+.b2{width:380px;height:380px;background:var(--acc);bottom:-100px;right:-60px;animation-delay:-6s}
+@keyframes float{to{transform:translate3d(60px,40px,0) scale(1.15)}}
+#fx{position:absolute;inset:0;width:100%;height:100%}
+.hero h1{font-size:clamp(2.8rem,9vw,7rem);font-weight:800}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ticket{padding:1.5rem;max-width:340px;transform-style:preserve-3d}
+.tok{font-size:4rem;font-weight:800}
+.pill{display:inline-block;padding:.15rem .7rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc)}
+/* marquee */
+.mq{overflow:hidden;border-block:1px solid var(--bd);padding:1.2rem 0;white-space:nowrap}
+.mq div{display:inline-block;animation:mq 28s linear infinite;font-size:2.4rem;font-weight:800;color:transparent;-webkit-text-stroke:1px var(--mut)}
+@keyframes mq{to{transform:translateX(-50%)}}
+/* cards */
+.card{padding:1.6rem;transition:box-shadow .3s}
+.card:hover{box-shadow:0 20px 50px -20px var(--pri)}
+.ico{width:44px;height:44px;border-radius:.8rem;display:grid;place-items:center;background:var(--pri);color:var(--onp);margin-bottom:1rem;font-size:1.2rem}
+/* roles (pinned) */
+/* demo */
+.phone{max-width:380px;margin:auto;padding:1.5rem}
+.bar{height:8px;border-radius:9px;background:var(--bd);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--pri),var(--acc))}
+select,input,textarea{width:100%;padding:.8rem 1rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:inherit}
+.err{color:var(--bad);font-size:.8rem;min-height:1.2em}
+/* reveal / cursor / loader */
+.js .rv{opacity:0;transform:translateY(30px)}
+#cur{position:fixed;top:0;left:0;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid var(--acc);border-radius:50%;pointer-events:none;z-index:200;display:none;transition:width .2s,height .2s,margin .2s,background .2s}
+#cur.h{width:64px;height:64px;margin:-32px 0 0 -32px;background:color-mix(in srgb,var(--acc) 25%,transparent)}
+@media(pointer:fine){#cur{display:block}}
+#loader{position:fixed;inset:0;z-index:300;background:#1B1440;color:#F4F0FF;display:grid;place-items:center}
+#curtain{position:fixed;inset:0;z-index:250;background:var(--pri);transform:scaleY(0);pointer-events:none}
+@media(prefers-reduced-motion:reduce){.blob,.mq div{animation:none}}
+/* ===== v2: pastel beige additions ===== */
+label{display:block;margin-top:.8rem;margin-bottom:.2rem;font-size:.85rem;font-weight:600}
+input.bad,select.bad,textarea.bad{border-color:var(--bad)}
+#sp{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;background:linear-gradient(90deg,var(--pri),var(--acc));transform:scaleX(0);transform-origin:left}
+.chip{position:absolute;padding:.4rem .9rem;border-radius:99px!important;font-size:.8rem;font-weight:600;animation:bob 5s ease-in-out infinite alternate}
+@keyframes bob{to{transform:translateY(-14px) rotate(2deg)}}
+.glass.card{position:relative;overflow:hidden}
+.glass.card::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.4),transparent 70%)}
+.glass.card:hover::after{opacity:1}
+.btn.p{position:relative;overflow:hidden}
+.btn.p::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-120%)}
+.btn.p:hover::after{transform:translateX(120%);transition:transform .7s}
+.mq.r div{animation-direction:reverse}
+.stage{padding:1.5rem;position:relative;overflow:hidden;min-height:260px}
+.dots{display:flex;gap:6px;justify-content:center;align-items:center;height:170px}
+.dots i{display:block;width:16px;height:16px;border-radius:50%;background:var(--mut)}
+.place{position:absolute;padding:.3rem .9rem;border-radius:99px!important;font-size:.85rem}
+.js .place{opacity:0}
+.tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.5rem 0}
+.tab{padding:.6rem 1.1rem;border-radius:99px;border:1px solid var(--bd);background:none;color:var(--fg);cursor:pointer;font:600 .95rem Inter,sans-serif}
+.tab[aria-selected=true]{background:var(--fg);color:var(--bg)}
+.panel{display:none}.panel.on{display:block;animation:pin .4s}
+@keyframes pin{from{opacity:0;transform:translateY(10px)}}
+.q{list-style:none;padding:0}.q li{display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--bd)}
+.tag{border-radius:99px;padding:.1rem .7rem;font-size:.75rem;font-weight:700;color:#1F1B3A}
+.ok{background:#B7EBC6}.wa{background:#FFE2A8}.ba{background:#FFC2CC}
+.chart{display:flex;align-items:flex-end;gap:8px;height:150px}.chart i{flex:1;background:var(--pri);border-radius:6px 6px 0 0;opacity:.8}
+table{width:100%;border-collapse:collapse}td,th{padding:.6rem .4rem;border-bottom:1px solid var(--bd);text-align:left}
+#ts{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);opacity:0;z-index:150;padding:.8rem 1.2rem;border-radius:99px;background:var(--fg);color:var(--bg);transition:.3s;pointer-events:none}
+#ts.on{opacity:1;transform:translate(-50%,0)}
+.note{padding:1.3rem;transform:rotate(var(--r,0deg));transition:transform .3s}
+.note:hover{transform:rotate(0) translateY(-6px)}
+.star{background:none;border:0;font-size:1.9rem;cursor:pointer;color:var(--bd);padding:0 .1rem}.star.on{color:var(--warn)}
+.cf{position:fixed;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:180}
+@media(prefers-reduced-motion:reduce){.chip{animation:none}}
+[hidden]{display:none!important}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 500px at 88% -5%,rgba(108,77,246,.16),transparent 60%),radial-gradient(700px 500px at -5% 45%,rgba(255,107,138,.13),transparent 60%)}
+header .btn{padding:.55rem .95rem;font-size:.85rem}
+.q.hist li,#notes li{align-items:center;gap:.8rem}.q li small{display:block;color:var(--mut);font-size:.8rem}
+.acts{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:flex-end}.acts .btn{padding:.3rem .7rem;font-size:.78rem}
+#notes li.unread b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:.45rem}
+.btn[disabled]{opacity:.5;cursor:wait}
+</style>
+</head>
+<body>
+<div id="sp"></div>
+<div id="loader" aria-hidden="true"><div style="text-align:center"><div style="letter-spacing:.3em;font-size:.8rem;opacity:.7">NOW SERVING</div><div class="disp" style="font-size:clamp(3.5rem,15vw,8rem);font-weight:800"><span id="ln">A-001</span></div></div></div>
+<div id="curtain"></div><div id="cur"></div>
+<a class="sr" href="#main">Skip to content</a>
+
+<header><div class="wrap">
+  <a href="#top" class="disp" style="font-weight:800;font-size:1.3rem;text-decoration:none;color:inherit">flow<span class="grad">Q</span></a>
+  <nav class="hidden md:block" aria-label="Main"><a href="#features">Features</a><a href="#portals">Portal</a><a href="#voices">Feedback</a><a href="#contact">Contact</a></nav>
+  <div style="display:flex;gap:.5rem">
+    <button class="btn" id="theme" aria-label="Toggle dark and light mode">◐</button>
+    <span id="guest" style="display:flex;gap:.5rem"><button class="btn mag" data-open="login">Login</button><button class="btn p mag" data-open="signin">Sign in</button></span>
+    <span id="member" hidden style="display:flex;gap:.5rem;align-items:center"><a class="btn p mag" id="dash" href="#portals">My portal</a><button class="btn" id="out">Log out</button></span>
+  </div>
+</div></header>
+
+<main id="main">
+<!-- 1. HERO -->
+<section class="hero" id="top" style="padding:3rem 0">
+  <div class="blob b1"></div><div class="blob b2"></div><canvas id="fx" aria-hidden="true"></canvas><span class="chip glass hidden md:block" style="top:12%;left:48%" aria-hidden="true">☕ Wait nearby</span><span class="chip glass hidden md:block" style="bottom:10%;right:8%;animation-delay:-2s" aria-hidden="true">🔔 You are next</span><span class="chip glass hidden md:block" style="top:8%;right:5%;animation-delay:-4s" aria-hidden="true">✓ Checked in</span>
+  <div class="wrap relative grid md:grid-cols-[1.4fr_1fr] gap-10 items-center" style="position:relative">
+    <div>
+      <span class="pill hi">● Live queues, zero lines</span>
+      <h1 class="hi" style="margin:1.2rem 0">Digital Queue &amp; <span class="grad">Appointment</span> Management</h1>
+      <p class="hi mut" style="font-size:1.2rem;max-width:34rem;margin-bottom:2rem">Eliminate physical waiting lines. Book appointments or grab digital tokens instantly.</p>
+      <div class="hi" style="display:flex;flex-wrap:wrap;gap:.8rem">
+        <a href="place.html?mode=book" class="btn p mag">Book an Appointment</a>
+        <a href="place.html?mode=walkin" class="btn g mag">Get Walk-In Token</a>
+        
+      </div>
+    </div>
+    <div class="glass ticket tilt hi" aria-label="Sample live token card">
+      <span class="pill">Now serving</span>
+      <div class="mut" style="margin-top:.8rem;font-size:.85rem">Your token</div>
+      <div class="tok disp">A-027</div>
+      <div class="bar" style="margin:.8rem 0"><i style="width:70%"></i></div>
+      <div style="display:flex;justify-content:space-between" class="mut"><span>Current A-021</span><span>~18 min</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="mq" aria-hidden="true"><div>BOOK ✦ QUEUE ✦ TRACK ✦ CALL ✦ SERVE ✦ BOOK ✦ QUEUE ✦ TRACK ✦ CALL ✦ SERVE ✦ </div></div>
+<div class="mq r" aria-hidden="true"><div>NO LINES ✦ NO STRESS ✦ NO WAITING ROOMS ✦ NO LINES ✦ NO STRESS ✦ NO WAITING ROOMS ✦ </div></div>
+
+<!-- 2. ABOUT -->
+<section id="about"><div class="wrap">
+  <span class="pill">The briefing</span>
+  <h2 id="split" style="max-width:16ch;margin:1rem 0 2.5rem">Stop standing in lines. Start living your day.</h2>
+  <div class="glass stage" id="stage" aria-label="Scroll animation: a crowded line turns into people waiting wherever they like">
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem"><b class="disp" id="stL" style="font-size:1.5rem">The old way</b><span class="mut" id="stS">2 hours, standing, hoping</span></div>
+    <div class="dots" id="dots"></div>
+    <span class="place glass" style="left:6%;top:48%">☕ Café</span><span class="place glass" style="right:6%;top:40%">🏠 Home</span><span class="place glass" style="left:44%;bottom:8%">🌳 Park</span>
+  </div>
+  <div class="grid md:grid-cols-3 gap-5" style="margin-top:1.5rem">
+    <article class="glass card tilt rv"><div class="disp grad" style="font-size:3rem;font-weight:800">01</div><h3 style="font-size:1.4rem;margin:.4rem 0">Grab a token</h3><p class="mut">Book a slot or join the walk-in queue in seconds.</p></article>
+    <article class="glass card tilt rv"><div class="disp grad" style="font-size:3rem;font-weight:800">02</div><h3 style="font-size:1.4rem;margin:.4rem 0">Go live your life</h3><p class="mut">Your live tracker shows people ahead and wait time. Wait nearby.</p></article>
+    <article class="glass card tilt rv"><div class="disp grad" style="font-size:3rem;font-weight:800">03</div><h3 style="font-size:1.4rem;margin:.4rem 0">Get called</h3><p class="mut">A voice call and an alert tell you when to walk to the counter.</p></article>
+  </div>
+</div></section>
+
+<!-- 3. FEATURES -->
+<section id="features"><div class="wrap">
+  <h2 class="rv" style="margin-bottom:3rem">Everything the queue needs</h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5" id="feat"></div>
+</div></section>
+
+<!-- 4. CUSTOMER PORTAL -->
+<section id="portals"><div class="wrap">
+  <h2 class="rv">Your <span class="grad">customer portal</span></h2>
+  <p class="mut rv" style="max-width:56ch;margin-top:.8rem">Track your token live and keep an eye on your appointment history.</p>
+  <div class="grid md:grid-cols-2 gap-5" style="margin-top:2rem">
+    <div class="glass card"><span class="pill">Live token tracker</span><div id="trk" aria-live="polite"></div></div>
+    <div class="glass card"><h3 style="font-size:1.4rem">Your history</h3><ul class="q hist" id="hist"></ul><p class="mut" style="margin-top:.8rem">Cancel or reschedule any upcoming appointment from here.</p></div>
+    <div class="glass card md:col-span-2"><div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap"><h3 style="font-size:1.4rem">Notifications <span class="pill" id="nUn" hidden></span></h3><button class="btn" id="nAll" hidden>Mark all as read</button></div><ul class="q" id="notes" style="margin-top:.6rem"></ul></div>
+  </div>
+</div></section>
+
+
+
+<!-- Stats -->
+<section id="stats"><div class="wrap grid grid-cols-2 lg:grid-cols-5 gap-4 text-center" id="metrics"></div></section>
+
+<!-- 5. FEEDBACK WALL -->
+<section id="voices"><div class="wrap">
+  <span class="pill">Feedback wall</span>
+  <h2 class="rv" style="margin:1rem 0 .6rem">What our customers <span class="grad">say</span></h2>
+  <p class="mut rv">Rate your experience and pin your own note to the wall.</p>
+  <div class="grid lg:grid-cols-[1fr_1.8fr] gap-6" style="margin-top:2rem">
+    <div class="glass card"><div class="disp" id="avg" style="font-size:4.5rem;font-weight:800">4.8</div><div id="avgS" style="color:var(--warn);font-size:1.3rem" aria-hidden="true">★★★★★</div><p class="mut"><span id="cnt">3</span> reviews</p>
+      <form id="fb" novalidate><label for="fn">Your name</label><input id="fn" autocomplete="name"><div class="err"></div>
+        <label id="fl">Rating</label><div id="stars" role="group" aria-labelledby="fl"></div>
+        <label for="ft">Your feedback</label><textarea id="ft" rows="3" placeholder="What worked? What should improve?"></textarea><div class="err" id="fe"></div>
+        <button class="btn p mag" type="submit" style="margin-top:.6rem">Pin to the wall</button></form></div>
+    <div id="wall" class="grid sm:grid-cols-2 gap-4"></div>
+  </div>
+</div></section>
+<!-- LOGIN (hidden until the Login button is clicked) -->
+<section id="login" hidden><div class="wrap grid md:grid-cols-2 gap-10 items-center">
+  <div><span class="pill">Welcome back</span><h2 style="margin:1rem 0">Login</h2><p class="mut" style="max-width:30rem">Log in to track your token, book appointments and see your history.</p>
+    <button type="button" class="btn" data-open="signin" style="margin-top:1rem">New here? Sign in</button></div>
+  <form id="lf" class="glass" style="padding:1.6rem" novalidate>
+    <div style="text-align:right"><button type="button" class="btn" data-close aria-label="Close login section">✕ Close</button></div>
+    <label for="le">Email</label><input id="le" type="email" autocomplete="email"><div class="err"></div>
+    <label for="lw">Password</label><input id="lw" type="password" autocomplete="current-password"><div class="err"></div>
+    <button type="button" id="fp" style="background:none;border:0;color:var(--mut);text-decoration:underline;cursor:pointer">Forgot password?</button><br>
+    <button class="btn p mag" type="submit" style="margin-top:.8rem">Login</button>
+    <p id="lok" role="status" style="margin-top:.8rem;color:var(--acc);font-weight:600"></p>
+  </form>
+</div></section>
+<!-- SIGN IN (hidden until the Sign in button is clicked) -->
+<section id="signin" hidden style="background:color-mix(in srgb,var(--pri) 9%,transparent)"><div class="wrap grid md:grid-cols-2 gap-10 items-center">
+  <form id="sf" class="glass" style="padding:1.6rem" novalidate>
+    <div style="text-align:right"><button type="button" class="btn" data-close aria-label="Close sign in section">✕ Close</button></div>
+    <label for="sn">Full name</label><input id="sn" autocomplete="name"><div class="err"></div>
+    <label for="se">Email</label><input id="se" type="email" autocomplete="email"><div class="err"></div>
+    <label for="sph">Phone</label><input id="sph" type="tel" autocomplete="tel"><div class="err"></div>
+    <label for="sw">Password</label><input id="sw" type="password" autocomplete="new-password"><div class="err"></div>
+    <button class="btn p mag" type="submit" style="margin-top:1rem">Sign in</button>
+    <p id="sok" role="status" style="margin-top:.8rem;color:var(--acc);font-weight:600"></p>
+  </form>
+  <div><span class="pill">New here?</span><h2 style="margin:1rem 0">Sign in</h2><p class="mut" style="max-width:30rem">Create your account with your email, phone and a password, and start booking in minutes.</p>
+    <button type="button" class="btn" data-open="login" style="margin-top:1rem">Already have an account? Login</button></div>
+</div></section>
+<div id="ts" role="status"></div>
+
+<!-- 6. CONTACT -->
+<section id="contact"><div class="wrap grid md:grid-cols-2 gap-10">
+  <div><h2 class="rv">Bring flowQ to your <span class="grad">department.</span></h2></div>
+  <form id="form" class="glass" style="padding:1.6rem" novalidate>
+    <label for="n">Name</label><input id="n" autocomplete="name"><div class="err" id="en"></div>
+    <label for="e">Email</label><input id="e" type="email" autocomplete="email"><div class="err" id="ee"></div>
+    <label for="p">Phone</label><input id="p" type="tel" autocomplete="tel"><div class="err" id="ep"></div>
+    <label for="m">Message</label><textarea id="m" rows="3"></textarea><div class="err" id="em"></div>
+    <button class="btn p mag" type="submit">Send message</button>
+    <p id="ok" role="status" style="margin-top:1rem;color:var(--acc);font-weight:600;opacity:0"></p>
+  </form>
+</div></section>
+</main>
+
+<!-- 7. FOOTER -->
+<footer style="border-top:1px solid var(--bd);padding:3rem 0"><div class="wrap" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:1.5rem">
+  <div><div class="disp" style="font-size:1.4rem;font-weight:800">flow<span class="grad">Q</span></div><p class="mut text-sm">Digital Queue &amp; Appointment Management System</p></div>
+  <nav aria-label="Footer" class="mut" style="display:flex;gap:1.2rem"><a href="#features">Features</a><a href="#portals">Portal</a><a href="#contact">Contact</a></nav>
+  <div style="display:flex;gap:.6rem">
+    <a class="btn mag" href="#top" aria-label="LinkedIn">in</a><a class="btn mag" href="#top" aria-label="X">𝕏</a><a class="btn mag" href="#top" aria-label="GitHub">gh</a>
+  </div>
+</div></footer>
+
+
+
+<script src="js/api.js"></script>
+<script>
+/* ============ helpers ============ */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches, g=window.gsap, root=document.documentElement;
+const fine=matchMedia('(pointer:fine)').matches;
+if(g&&window.ScrollTrigger) g.registerPlugin(ScrollTrigger);
+const anim=g&&!RM;
+if(anim) root.classList.add('js');
+
+/* ============ theme toggle ============ */
+$('#theme').onclick=()=>{root.dataset.theme=getComputedStyle(root).getPropertyValue('--mode').trim()==='dark'?'light':'dark'};
+
+/* ============ data-driven content ============ */
+const FEATS=[['📅','Appointment booking','Slot picker with capacity caps (e.g. 6 per 9:00–9:30) and no double-booking.'],
+['🎫','Live digital tokens','Real-time position, people ahead and estimated wait on any phone.'],
+['🎙️','Voice token calling','Automatic AI voice calling; staff press one button when the visitor arrives.'],
+['⏱️','Smart wait times','Recalculates instantly when a counter closes or staff change status.'],
+['🔔','Notifications','Email, SMS and in-app alerts when your turn is close or you are called.'],
+['📊','Analytics & reports','Wait time by department, queue length by hour, no-show rate, CSV/PDF export.']];
+$('#feat').innerHTML=FEATS.map(f=>`<article class="glass card tilt rv"><div class="ico">${f[0]}</div><h3 style="font-size:1.4rem;margin-bottom:.5rem">${f[1]}</h3><p class="mut">${f[2]}</p></article>`).join('');
+
+
+
+/* live numbers from the API (0 until they load) */
+const MET=[['appointments_today','Appointments today',''],['walkins_today','Walk-in tokens',''],['waiting','Currently waiting',''],['active_counters','Active counters',''],['avg_wait','Avg wait',' min']];
+$('#metrics').innerHTML=MET.map(m=>`<div class="glass card tilt"><div class="disp" style="font-size:3rem;font-weight:800"><span data-n="0" data-k="${m[0]}">0</span>${m[2]}</div><div class="mut text-sm">${m[1]}</div></div>`).join('');
+let statsSeen=false;
+const countUp=()=>$$('#metrics [data-n]').forEach(el=>{if(!anim){el.textContent=el.dataset.n;return}const o={v:0};g.to(o,{v:+el.dataset.n,duration:1.6,ease:'power2.out',onUpdate:()=>el.textContent=Math.round(o.v)})});
+FQ.api('/public/stats').then(s=>{$$('#metrics [data-k]').forEach(el=>{el.dataset.n=s[el.dataset.k]??0;if(!anim||statsSeen)el.textContent=el.dataset.n});if(statsSeen)countUp()}).catch(()=>{});
+if(anim) ScrollTrigger.create({trigger:'#stats',start:'top 85%',once:true,onEnter:()=>{statsSeen=true;countUp()}});
+
+/* ============ contact form ============ */
+$('#form').onsubmit=async e=>{e.preventDefault();
+ const v={n:$('#n').value.trim(),e:$('#e').value.trim(),p:$('#p').value.trim(),m:$('#m').value.trim()};
+ const E={n:v.n.length<2&&'Please enter your name.',e:!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.e)&&'Enter a valid email.',p:!/^\+?[\d\s-]{10,15}$/.test(v.p)&&'Enter a phone number with 10 to 15 digits.',m:v.m.length<10&&'Message needs at least 10 characters.'};
+ let bad=false;for(const k in E){$('#e'+k).textContent=E[k]||'';if(E[k]){bad=true;if(anim)g.fromTo('#'+k,{x:-8},{x:0,duration:.5,ease:'elastic.out(1,.3)'})}}
+ if(bad)return;
+ const btn=e.target.querySelector('button[type=submit],button:not([type])');btn.disabled=true;
+ try{const r=await FQ.api('/contact',{method:'POST',body:{name:v.n,email:v.e,phone:v.p,message:v.m}});$('#ok').textContent=r.message;e.target.reset()}
+ catch(err){$('#ok').textContent=err.message}
+ finally{btn.disabled=false}
+ anim?g.fromTo('#ok',{opacity:0,y:10,scale:.9},{opacity:1,y:0,scale:1,duration:.6,ease:'back.out(2)'}):$('#ok').style.opacity=1};
+
+/* ============ hero particles (canvas) ============ */
+(function(){const c=$('#fx'),x=c.getContext('2d');let w,h,P=[];
+ const size=()=>{w=c.width=c.offsetWidth;h=c.height=c.offsetHeight;P=Array.from({length:Math.min(60,w/18)},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*2+1,s:Math.random()*.4+.1}))};
+ size();addEventListener('resize',size);
+ function draw(){x.clearRect(0,0,w,h);x.fillStyle='rgba(16,185,129,.6)';P.forEach(p=>{p.y-=p.s;if(p.y<0)p.y=h;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()});if(!RM)requestAnimationFrame(draw)}
+ draw()})();
+
+/* ============ helpers: toast, tokens, validation, confetti ============ */
+const pad=n=>'A-'+String(n).padStart(3,'0');
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('#ts');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600)}
+const go=id=>{const t=$(id);lenis?lenis.scrollTo(t):t.scrollIntoView({behavior:'smooth'})};
+const em=v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v),ph=v=>/^\+?[\d\s-]{10,15}$/.test(v);
+function chk(rules){let ok=true;rules.forEach(([id,fn,msg])=>{const i=$(id),e=i.nextElementSibling,v=fn(i.value.trim());i.classList.toggle('bad',!v);e.textContent=v?'':msg;if(!v)ok=false});return ok}
+function confetti(el){if(!anim)return;const r=el.getBoundingClientRect(),cs=['#6C4DF6','#FF6B8A','#FFB547','#4ADE80','#38BDF8'];
+ for(let i=0;i<28;i++){const d=document.createElement('i');d.className='cf';d.style.background=cs[i%5];d.style.left=r.left+r.width/2+'px';d.style.top=r.top+'px';document.body.append(d);
+  g.timeline({onComplete:()=>d.remove()}).to(d,{x:g.utils.random(-160,160),y:g.utils.random(-200,-40),rotation:g.utils.random(-360,360),duration:.6,ease:'power2.out'}).to(d,{y:'+=240',opacity:0,duration:.8,ease:'power1.in'})}}
+
+/* ============ About: scroll-scrubbed "line becomes freedom" stage ============ */
+$('#dots').innerHTML='<i></i>'.repeat(14);
+const sp=$('#split');sp.innerHTML=sp.textContent.split(' ').map(w=>`<span>${w}</span>`).join(' ');
+if(anim){
+ g.fromTo('#split span',{opacity:.15},{opacity:1,stagger:.12,ease:'none',scrollTrigger:{trigger:'#split',start:'top 80%',end:'bottom 45%',scrub:true}});
+ const tl=g.timeline({scrollTrigger:{trigger:'#stage',start:'top 75%',end:'bottom 35%',scrub:1,onUpdate:s=>{const a=s.progress>.5;$('#stL').textContent=a?'The flowQ way':'The old way';$('#stS').textContent=a?'Token A-027 · 18 min · wait anywhere':'2 hours, standing, hoping'}}});
+ tl.to('#dots i',{x:()=>g.utils.random(-120,120),y:()=>g.utils.random(-60,60),backgroundColor:'#8B7BFF',scale:1.3,stagger:.03,ease:'power2.inOut'}).to('.place',{opacity:1,y:-6,stagger:.1},'<.2');
+ g.to('#sp',{scaleX:1,ease:'none',scrollTrigger:{scrub:.3,start:0,end:'max'}});
+}
+
+/* ============ Customer portal: live token tracker, history, notifications (API) ============ */
+const E=FQ.esc;
+let myTicket=null,lastStatus=null,stopPoll=null;
+const isCustomer=()=>FQ.loggedIn()&&(FQ.user()||{}).role==='customer';
+function trackerEmpty(html){$('#trk').innerHTML=`<div style="padding:1.2rem 0">${html}</div>`}
+function drawTracker(t){
+ if(!FQ.loggedIn())return trackerEmpty(`<p class="mut">Log in to track your token live.</p><div style="display:flex;gap:.6rem;margin-top:1rem"><button class="btn p" data-open="login">Login</button><button class="btn" data-open="signin">Create account</button></div>`);
+ const u=FQ.user()||{};
+ if(u.role!=='customer')return trackerEmpty(`<p class="mut">You are logged in as ${E(u.full_name)}. Your tools are in your dashboard.</p><a class="btn p" style="margin-top:1rem" href="${E(u.home)}">Open dashboard</a>`);
+ if(!t)return trackerEmpty(`<p class="mut">You have no active token right now.</p><div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem"><a class="btn p" href="place.html?mode=walkin">Get a walk-in token</a><a class="btn" href="place.html?mode=book">Book an appointment</a></div>`);
+ const pct=t.status==='waiting'?Math.max(6,100/(t.ahead+1)):100;
+ $('#trk').innerHTML=`<div class="tok disp" style="margin-top:.6rem">${E(t.token)}</div><p class="mut" style="margin:-.3rem 0 .6rem">${E(t.department)} · ${E(t.service)}</p>
+  <p>Current token: <b>${E(t.now_serving||'—')}</b></p><p>People ahead: <b>${t.ahead}</b></p>
+  <p>Estimated waiting time: <b>${t.status!=='waiting'?'0 minutes':t.eta_minutes===null?'waiting for a counter to open':t.eta_minutes+' minutes'}</b></p>
+  <div class="bar" style="margin:.8rem 0"><i style="width:${pct}%"></i></div><p style="font-weight:600">${E(t.message)}</p>
+  <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">${t.status==='waiting'?`<button class="btn" id="leave">Leave queue</button>`:''}<button class="btn" id="refresh">Refresh</button></div>`}
+async function loadTicket(){
+ if(!isCustomer()){myTicket=null;return drawTracker(null)}
+ const list=await FQ.api('/queue/my');
+ myTicket=list.find(t=>t.status!=='waiting')||list[0]||null;
+ if(myTicket&&myTicket.status==='called'&&lastStatus!=='called'){toast(`${myTicket.token}, please go to ${myTicket.counter}`);try{speechSynthesis.speak(new SpeechSynthesisUtterance(`Token ${myTicket.token.replace('-',' ')}, please go to ${myTicket.counter}`))}catch(e){}}
+ lastStatus=myTicket&&myTicket.status;drawTracker(myTicket)}
+function histRow(h){
+ const acts=[h.can_check_in?`<button class="btn p" data-a="in" data-id="${h.id}">Check in</button>`:'',
+  h.can_reschedule?`<a class="btn" href="workflow.html?place=${E(h.place_slug)}&dept=${h.department_id}&reschedule=${h.id}">Reschedule</a>`:'',
+  h.can_cancel?`<button class="btn" data-a="cancel" data-id="${h.id}" data-ref="${E(h.ref)}">Cancel</button>`:''].join('');
+ return `<li><span><b>${E(h.title)}</b><small>${FQ.day(h.date)} · ${E(h.time)} · ${E(h.ref)}</small></span><span class="acts">${acts}<span class="tag ${h.tone}">${E(h.status)}</span></span></li>`}
+async function loadHistory(){
+ if(!isCustomer()){$('#hist').innerHTML=`<li class="mut">${FQ.loggedIn()?'Only customer accounts have a visit history.':'Log in to see your appointments and visits.'}</li>`;return}
+ const items=await FQ.api('/me/history');
+ $('#hist').innerHTML=items.slice(0,8).map(histRow).join('')||'<li class="mut">No appointments or visits yet.</li>'}
+async function loadNotes(){
+ if(!isCustomer()){$('#notes').innerHTML=`<li class="mut">${FQ.loggedIn()?'Notifications are for customer accounts.':'Log in to see your notifications.'}</li>`;$('#nUn').hidden=$('#nAll').hidden=true;return}
+ const n=await FQ.api('/notifications');
+ $('#nUn').hidden=!n.unread;$('#nUn').textContent=n.unread+' new';$('#nAll').hidden=!n.unread;
+ $('#notes').innerHTML=n.items.slice(0,6).map(x=>`<li class="${x.read?'':'unread'}"><span><b>${E(x.title)}</b><small>${E(x.body)}</small></span><small>${FQ.day(x.created_at)} ${FQ.time(x.created_at)}</small></li>`).join('')||'<li class="mut">No notifications yet.</li>'}
+async function loadPortal(){
+ drawTracker(null);
+ await Promise.all([loadTicket(),loadHistory(),loadNotes()]).catch(e=>toast(e.message));
+ if(stopPoll)stopPoll();
+ if(isCustomer())stopPoll=FQ.poll(()=>Promise.all([loadTicket(),loadNotes()]),5000)}
+$('#trk').addEventListener('click',async e=>{
+ if(e.target.id==='refresh')return loadTicket().catch(err=>toast(err.message));
+ if(e.target.id==='leave'&&myTicket&&confirm(`Leave the queue? Token ${myTicket.token} will be cancelled.`)){
+  try{await FQ.api(`/queue/tickets/${myTicket.id}/cancel`,{method:'POST'});toast('You left the queue');await Promise.all([loadTicket(),loadHistory()])}catch(err){toast(err.message)}}});
+$('#hist').addEventListener('click',async e=>{const b=e.target.closest('button[data-a]');if(!b)return;
+ if(b.dataset.a==='cancel'&&!confirm(`Cancel appointment ${b.dataset.ref}? The slot will be released.`))return;
+ b.disabled=true;
+ try{const r=await FQ.api(`/appointments/${b.dataset.id}/${b.dataset.a==='in'?'check-in':'cancel'}`,{method:'POST'});
+  toast(b.dataset.a==='in'?`Checked in. Your token is ${r.ticket.token}`:`Appointment ${r.code} cancelled`);await Promise.all([loadTicket(),loadHistory(),loadNotes()])}
+ catch(err){toast(err.message);b.disabled=false;loadHistory().catch(()=>{})}});
+$('#nAll').onclick=async()=>{try{await FQ.api('/notifications/read-all',{method:'POST'});loadNotes()}catch(e){toast(e.message)}};
+
+/* ============ Feedback wall (API) ============ */
+const rot=()=>(Math.random()*3-1.5).toFixed(1);
+const noteHTML=f=>`<article class="glass card note" style="--r:${rot()}deg"><span class="tag" style="background:#D9D0FF">Customer</span><div style="color:var(--warn);margin:.5rem 0" aria-label="${f.rating} out of 5 stars">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</div><p>“${esc(f.comment)}”</p><small class="mut">${esc(f.name)}${f.context?' · '+esc(f.context):''}</small></article>`;
+let fbCount=0,fbSum=0;
+function fbStats(){const a=fbCount?fbSum/fbCount:0,r=Math.round(a);$('#avg').textContent=a.toFixed(1);$('#cnt').textContent=fbCount;$('#avgS').textContent='★'.repeat(r)+'☆'.repeat(5-r)}
+FQ.api('/feedback').then(f=>{fbCount=f.count;fbSum=f.average*f.count;$('#wall').innerHTML=f.items.slice(0,6).map(noteHTML).join('');fbStats()}).catch(()=>{$('#wall').innerHTML='<p class="mut">Feedback could not be loaded.</p>'});
+let rate=0;$('#stars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="star" data-n="${n}" aria-label="${n} star${n>1?'s':''}">★</button>`).join('');
+$('#stars').addEventListener('click',e=>{const b=e.target.closest('.star');if(!b)return;rate=+b.dataset.n;$$('.star').forEach(s=>s.classList.toggle('on',+s.dataset.n<=rate));if(anim)g.fromTo(b,{scale:1.6},{scale:1,duration:.4,ease:'back.out(3)'})});
+if(FQ.user())$('#fn').value=FQ.user().full_name;
+$('#fb').onsubmit=async e=>{e.preventDefault();const t=$('#ft').value.trim(),okName=chk([['#fn',v=>v.length>1,'Enter your name.']]);
+ if(!rate||t.length<10){$('#fe').textContent=!rate?'Please choose a star rating.':'Write at least 10 characters.';return}
+ $('#fe').textContent='';if(!okName)return;
+ const btn=e.submitter||$('#fb button[type=submit]');btn.disabled=true;
+ try{const f=await FQ.api('/feedback',{method:'POST',body:{name:$('#fn').value.trim(),rating:rate,comment:t}});
+  fbCount++;fbSum+=f.rating;
+  $('#wall').insertAdjacentHTML('afterbegin',noteHTML(f));const n=$('#wall').firstElementChild;
+  if(anim)g.from(n,{scale:.6,rotation:-8,opacity:0,duration:.7,ease:'back.out(2)'});confetti(btn);
+  fbStats();e.target.reset();rate=0;$$('.star').forEach(s=>s.classList.remove('on'))}
+ catch(err){$('#fe').textContent=err.message}finally{btn.disabled=false}};
+
+/* ============ Login and Sign in (API) ============ */
+const AUTH=['login','signin'];
+function openAuth(id){AUTH.forEach(a=>$('#'+a).hidden=a!==id);$('#lok').textContent='';$('#sok').textContent='';
+ if(anim){g.from('#'+id,{opacity:0,y:40,duration:.6,ease:'power3.out'});ScrollTrigger.refresh()}setTimeout(()=>go('#'+id),60)}
+function closeAuth(){AUTH.forEach(a=>$('#'+a).hidden=true);if(anim)ScrollTrigger.refresh()}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o)openAuth(o.dataset.open);if(e.target.closest('[data-close]'))closeAuth()});
+function drawHeader(){const u=FQ.loggedIn()&&FQ.user();$('#guest').hidden=!!u;$('#member').hidden=!u;
+ if(u){$('#dash').textContent=u.role==='customer'?'My portal':'Dashboard';$('#dash').href=u.role==='customer'?'#portals':u.home}}
+$('#out').onclick=()=>FQ.logout('index.html');
+const params=new URLSearchParams(location.search);
+function afterLogin(u){drawHeader();closeAuth();
+ const next=params.get('next');
+ if(next&&!/[:/\\]/.test(next)){location.href=next;return}
+ if(u.role!=='customer'){location.href=u.home;return}
+ loadPortal();go('#portals')}
+$('#fp').onclick=async()=>{const m=$('#le').value.trim();if(!em(m)){chk([['#le',em,'Enter your email first, then press "Forgot password?".']]);return}
+ try{toast((await FQ.api('/auth/forgot-password',{method:'POST',body:{email:m}})).message)}catch(e){toast(e.message)}};
+$('#lf').onsubmit=async e=>{e.preventDefault();if(!chk([['#le',em,'Enter a valid email, like name@example.com.'],['#lw',v=>v.length>=8,'Use at least 8 characters.']]))return;
+ const btn=e.submitter||$('#lf button[type=submit]');btn.disabled=true;$('#lok').textContent='';
+ try{const u=await FQ.login($('#le').value.trim(),$('#lw').value);$('#lok').textContent=`Welcome back, ${u.full_name}. Opening your ${u.role==='customer'?'portal':'dashboard'}…`;e.target.reset();setTimeout(()=>afterLogin(u),700)}
+ catch(err){$('#lok').textContent=err.message}finally{btn.disabled=false}};
+$('#sf').onsubmit=async e=>{e.preventDefault();if(!chk([['#sn',v=>v.length>1,'Enter your name.'],['#se',em,'Enter a valid email.'],['#sph',ph,'Enter a phone number with 10 to 15 digits.'],['#sw',v=>v.length>=8,'Use at least 8 characters.']]))return;
+ const btn=e.submitter||$('#sf button[type=submit]');btn.disabled=true;$('#sok').textContent='';
+ try{const u=await FQ.register({full_name:$('#sn').value.trim(),email:$('#se').value.trim(),phone:$('#sph').value.trim(),password:$('#sw').value});
+  $('#sok').textContent='Account created. Welcome, '+u.full_name+'!';confetti(btn);e.target.reset();setTimeout(()=>afterLogin(u),1200)}
+ catch(err){$('#sok').textContent=err.message}finally{btn.disabled=false}};
+drawHeader();
+(FQ.loggedIn()?FQ.me().catch(()=>null):Promise.resolve()).then(()=>{drawHeader();loadPortal()});
+if(params.get('login'))setTimeout(()=>openAuth('login'),anim?1900:50);
+
+/* ============ extra motion: card spotlight, scroll refresh ============ */
+document.addEventListener('pointermove',e=>{const c=e.target.closest&&e.target.closest('.card');if(c){const r=c.getBoundingClientRect();c.style.setProperty('--mx',e.clientX-r.left+'px');c.style.setProperty('--my',e.clientY-r.top+'px')}});
+if(anim)addEventListener('load',()=>ScrollTrigger.refresh());
+
+/* ============ motion: smooth scroll, reveals, pin, tilt, cursor, magnets ============ */
+let lenis;
+if(anim){
+ if(window.Lenis){lenis=new Lenis();g.ticker.add(t=>lenis.raf(t*1000));g.ticker.lagSmoothing(0);lenis.on('scroll',ScrollTrigger.update)}
+ ScrollTrigger.batch('.rv',{start:'top 88%',once:true,onEnter:b=>g.to(b,{opacity:1,y:0,duration:.8,stagger:.1,ease:'power3.out'})});
+ g.utils.toArray('.hero h1,.hero .hi').length;
+ /* parallax blobs */
+ g.to('.b1',{y:200,scrollTrigger:{trigger:'.hero',scrub:true,start:'top top',end:'bottom top'}});
+ g.to('.b2',{y:-120,scrollTrigger:{trigger:'.hero',scrub:true,start:'top top',end:'bottom top'}});
+ /* 3D tilt cards */
+ $$('.tilt').forEach(el=>{el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();g.to(el,{rotationY:((e.clientX-r.left)/r.width-.5)*14,rotationX:-((e.clientY-r.top)/r.height-.5)*14,transformPerspective:800,duration:.4})});
+  el.addEventListener('pointerleave',()=>g.to(el,{rotationX:0,rotationY:0,duration:.6}))});
+ /* magnetic buttons */
+ $$('.mag').forEach(el=>{el.addEventListener('pointermove',e=>{const r=el.getBoundingClientRect();g.to(el,{x:(e.clientX-r.left-r.width/2)*.3,y:(e.clientY-r.top-r.height/2)*.3,duration:.3})});
+  el.addEventListener('pointerleave',()=>g.to(el,{x:0,y:0,duration:.5,ease:'elastic.out(1,.4)'}))});
+ /* custom cursor */
+ if(fine){const mx=g.quickTo('#cur','x',{duration:.25}),my=g.quickTo('#cur','y',{duration:.25});
+  addEventListener('pointermove',e=>{mx(e.clientX);my(e.clientY)});
+  document.addEventListener('pointerover',e=>$('#cur').classList.toggle('h',!!e.target.closest('a,button,select,input,textarea')))}
+ /* page transition: curtain wipe on anchor navigation */
+ $$('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const t=$(a.getAttribute('href'));if(!t)return;e.preventDefault();
+  g.timeline().to('#curtain',{scaleY:1,transformOrigin:'bottom',duration:.35,ease:'power3.in'})
+   .add(()=>{lenis?lenis.scrollTo(t,{immediate:true}):t.scrollIntoView()})
+   .to('#curtain',{scaleY:0,transformOrigin:'top',duration:.35,ease:'power3.out'})}));
+ /* loader → hero intro */
+ const o={v:0};g.to(o,{v:100,duration:1.3,ease:'power2.inOut',onUpdate:()=>$('#ln').textContent=pad(Math.max(1,Math.round(o.v*.27))),
+  onComplete:()=>g.timeline().to('#loader',{yPercent:-100,duration:.7,ease:'power3.inOut'}).set('#loader',{display:'none'}).from('.hi',{y:40,opacity:0,stagger:.1,duration:.8,ease:'power3.out'},'-=.3')})
+}else{$('#loader').style.display='none'}
+</script>
+</body>
+</html>

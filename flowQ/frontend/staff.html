@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flowQ · Service Staff Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--mode:light;--bg:#FBF8FF;--fg:#1F1B3A;--mut:#6B6590;--card:rgba(255,255,255,.72);--bd:#E6DEF7;--pri:#6C4DF6;--acc:#E5436A;--onp:#fff;--ok:#2FB36B;--warn:#F5A524;--bad:#E5484D;--brk:#8B7BFF}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}}
+:root[data-theme="dark"]{--bg:#14102B;--fg:#F4F0FF;--mut:#A89FD0;--card:rgba(44,36,88,.55);--bd:rgba(180,165,255,.2);--pri:#9B86FF;--acc:#FF86A3;--onp:#14102B}
+*{margin:0;box-sizing:border-box}
+body{font:16px/1.55 Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;
+ background-image:radial-gradient(900px 500px at 88% -5%,rgba(108,77,246,.16),transparent 60%),radial-gradient(700px 500px at -5% 45%,rgba(255,107,138,.13),transparent 60%);background-attachment:fixed}
+h1,h2,h3,.disp{font-family:'Bricolage Grotesque',Inter,sans-serif;letter-spacing:-.03em;line-height:1.05}
+.wrap{max-width:1120px;margin:auto;padding:1.5rem 1.25rem 4rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.logo{font-size:1.5rem;font-weight:800}
+.grad{background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+.mut{color:var(--mut)}
+.pill{display:inline-block;padding:.15rem .8rem;border-radius:99px;font-size:.75rem;font-weight:600;background:color-mix(in srgb,var(--acc) 18%,transparent);color:var(--acc)}
+.glass{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bd);border-radius:1.25rem}
+.card{padding:1.4rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.75rem 1.1rem;border-radius:.7rem;font:600 .92rem Inter,sans-serif;border:1px solid var(--bd);background:transparent;color:inherit;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 24px -14px var(--pri)}
+.btn.p{background:var(--pri);color:var(--onp);border-color:transparent}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+select{padding:.65rem .9rem;border-radius:.7rem;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:inherit}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.2rem}
+.stats b{display:block;font-size:2.2rem;font-weight:800}
+.cols{display:grid;gap:1.2rem}
+@media(min-width:900px){.cols{grid-template-columns:1fr 1.1fr;align-items:start}}
+h2{font-size:1.4rem;margin-bottom:.9rem}
+#wq{list-style:none;padding:0;display:grid;gap:.5rem}
+.row{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;padding:.7rem .9rem;border-radius:.9rem;border:1px solid var(--bd);background:transparent;color:inherit;font:inherit;cursor:pointer;animation:slide .4s both;transition:border-color .2s,background .2s}
+.row:hover{border-color:var(--pri)}
+.row[aria-pressed=true]{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 10%,transparent)}
+.row .t{font:800 1.1rem 'Bricolage Grotesque',sans-serif;min-width:3.8rem}
+.row small{display:block;color:var(--mut)}
+.tag{margin-left:auto;font-size:.72rem;font-weight:700;padding:.1rem .6rem;border-radius:99px;background:var(--bd);white-space:nowrap}
+@keyframes slide{from{opacity:0;transform:translateX(-14px)}}
+.tok{font-size:4.2rem;font-weight:800;margin:.3rem 0}
+.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}@keyframes pop{from{transform:scale(.6);opacity:0}}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem}
+.acts .wide{grid-column:span 2}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.4rem;background:var(--ok)}
+[data-s=Busy] .dot{background:var(--warn)}[data-s=Break] .dot{background:var(--brk)}[data-s=Closed] .dot{background:var(--bad)}
+.dot{animation:pulse 2s infinite}@keyframes pulse{50%{box-shadow:0 0 0 6px transparent;opacity:.6}}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1rem}dt{color:var(--mut);font-size:.88rem}dd{font-weight:500}
+#log{list-style:none;padding:0;display:grid;gap:.4rem;font-size:.9rem}
+#log li{display:flex;gap:.8rem;animation:slide .3s both}#log time{color:var(--mut);min-width:4.5rem}
+#ts{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);opacity:0;z-index:150;padding:.8rem 1.2rem;border-radius:99px;background:var(--fg);color:var(--bg);transition:.3s;pointer-events:none}
+#ts.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div style="display:flex;align-items:center;gap:.8rem"><div class="logo disp">flow<span class="grad">Q</span></div><span class="pill" id="who">Service Staff</span></div>
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+      <label class="mut" style="font-size:.85rem"><input type="checkbox" id="voice" checked> Voice calling</label>
+      <span id="stw" data-s="Available"><span class="dot"></span><label for="stat" class="sr" style="position:absolute;left:-999px">Service status</label>
+        <select id="stat"><option>Available</option><option>Busy</option><option>Break</option><option>Closed</option></select></span>
+      <button class="btn" id="theme" aria-label="Toggle dark and light mode">◐</button>
+      <button class="btn" id="out">Log out</button>
+    </div>
+  </div>
+  <p id="warn" class="glass card" style="margin-bottom:1.2rem;font-weight:600" hidden></p>
+
+  <div class="stats">
+    <div class="glass card"><b class="disp" id="sW">0</b><span class="mut">Waiting</span></div>
+    <div class="glass card"><b class="disp" id="sD">0</b><span class="mut">Served today</span></div>
+    <div class="glass card"><b class="disp" id="sK">0</b><span class="mut">Skipped</span></div>
+  </div>
+
+  <div class="cols">
+    <section class="glass card" aria-labelledby="h1">
+      <h2 id="h1">View waiting customers</h2>
+      <ul id="wq"></ul>
+      <p class="mut" style="margin-top:.8rem;font-size:.85rem">Select a customer to view their appointment details. The list refreshes every few seconds.</p>
+    </section>
+    <div style="display:grid;gap:1.2rem">
+      <section class="glass card" aria-labelledby="h2">
+        <h2 id="h2">Now serving</h2>
+        <div class="tok disp grad" id="tok">—</div>
+        <p id="state" aria-live="polite" style="font-weight:600">Idle. Call the next token to begin.</p>
+        <p class="mut">Service timer: <b id="tm">00:00</b></p>
+        <div class="acts">
+          <button class="btn p wide" id="call">Call the next token</button>
+          <button class="btn" id="start">Start service</button>
+          <button class="btn" id="done">Complete service</button>
+          <button class="btn" id="skip">Skip unavailable customer</button>
+          <button class="btn" id="recall">Recall a token</button>
+        </div>
+        <p class="mut" style="margin-top:.8rem;font-size:.85rem">Update service status with the selector at the top of the page.</p>
+      </section>
+      <section class="glass card" aria-labelledby="h3">
+        <h2 id="h3">View customer appointment details</h2>
+        <dl id="det"></dl>
+      </section>
+    </div>
+  </div>
+
+  <section class="glass card" style="margin-top:1.2rem" aria-labelledby="h4"><h2 id="h4">Recent activity</h2><ul id="log"></ul></section>
+</div>
+<div id="ts" role="status"></div>
+<script src="js/api.js"></script>
+<script>
+const $=s=>document.querySelector(s),E=FQ.esc;
+let U=null,S=null,sel=null,busy=false,tmr=null,lastCurrent=null;
+function toast(t){const e=$('#ts');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2800)}
+function speak(tok,counter){if(!$('#voice').checked)return;try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(`Token ${tok.replace('-',' ')}, please go to ${counter}`))}catch(e){}}
+function setStatus(v){$('#stat').value=v;$('#stw').dataset.s=v}
+const mmss=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function tick(){clearInterval(tmr);const c=S&&S.current;const from=c&&(c.started_at||c.called_at);
+ if(!from){$('#tm').textContent='00:00';return}
+ const upd=()=>{$('#tm').textContent=mmss(Math.max(0,Math.floor((Date.now()-new Date(from))/1000)))};upd();tmr=setInterval(upd,1000)}
+function render(){
+ const c=S.current,cnt=S.counter;
+ $('#who').textContent=`Service Staff · ${cnt?cnt.name:'No counter'}${S.department?' · '+S.department:''}`;
+ $('#warn').hidden=!!cnt;$('#warn').textContent=cnt?'':'You are not assigned to a service counter yet. Ask your department manager to assign you, then this page updates automatically.';
+ $('#wq').innerHTML=S.waiting.length?S.waiting.map((w,i)=>`<li><button class="row" aria-pressed="${sel===w.id}" data-id="${w.id}" style="animation-delay:${Math.min(i,10)*50}ms"><span class="t">${E(w.token)}</span><span><b>${E(w.name)}</b><small>${E(w.service)}</small></span><span class="tag">${w.skipped?'Skipped earlier':w.type}</span></button></li>`).join(''):'<li class="mut">No customers waiting.</li>';
+ $('#sW').textContent=S.stats.waiting;$('#sD').textContent=S.stats.served_today;$('#sK').textContent=S.stats.skipped_today;
+ $('#tok').textContent=c?c.token:'—';
+ $('#state').textContent=!c?'Idle. Call the next token to begin.':c.status==='called'?`Called ${c.token}. Waiting for ${c.name}.${c.recalls?' Recalled '+c.recalls+'×.':''}`:`In service: ${c.name} · ${c.service}`;
+ const st=cnt?cnt.status:'Closed';setStatus(st);$('#stat').disabled=!cnt||!FQ.can(U,'update_service_status');
+ $('#call').disabled=busy||!cnt||!!c||st!=='Available'||!S.waiting.length||!FQ.can(U,'call_tokens');
+ $('#start').disabled=busy||!c||c.status!=='called'||!FQ.can(U,'serve_customers');
+ $('#skip').disabled=busy||!c||c.status!=='called'||!FQ.can(U,'call_tokens');
+ $('#recall').disabled=busy||!c||c.status!=='called'||!FQ.can(U,'call_tokens');
+ $('#done').disabled=busy||!c||c.status!=='serving'||!FQ.can(U,'serve_customers');
+ $('#log').innerHTML=S.recent.map(r=>`<li><time>${FQ.time(r.created_at)}</time><span>${E(r.message)}</span></li>`).join('')||'<li class="mut">No activity yet today.</li>';
+ const cur=c?c.id+c.status:null;if(cur!==lastCurrent){tick();lastCurrent=cur}}
+async function details(id){
+ if(!FQ.can(U,'view_customer_details')){$('#det').innerHTML='<dt>Details</dt><dd>Your role is not allowed to view customer details.</dd>';return}
+ try{const d=await FQ.api('/staff/tickets/'+id);
+  $('#det').innerHTML=`<dt>Token</dt><dd>${E(d.token)}</dd><dt>Customer</dt><dd>${E(d.customer)}</dd><dt>Phone</dt><dd>${E(d.phone)}</dd><dt>Department</dt><dd>${E(d.department)}</dd><dt>Service</dt><dd>${E(d.service)}</dd><dt>Booking type</dt><dd>${E(d.booking_type)}${d.appointment_code?' · '+E(d.appointment_code):''}</dd><dt>Appointment time</dt><dd>${E(d.appointment_time)}</dd><dt>Check-in</dt><dd>${d.checked_in_at?'Checked in '+FQ.time(d.checked_in_at):'Joined '+FQ.time(d.joined_at)}</dd>${d.skip_count?`<dt>Skipped</dt><dd>${d.skip_count}×</dd>`:''}`}
+ catch(e){$('#det').innerHTML=`<dt>Details</dt><dd>${E(e.message)}</dd>`}}
+async function load(){S=await FQ.api('/staff/console');
+ const ids=new Set([...(S.current?[S.current.id]:[]),...S.waiting.map(w=>w.id)]);
+ if(!sel||!ids.has(sel)){sel=S.current?S.current.id:(S.waiting[0]||{}).id||null;if(sel)details(sel);else $('#det').innerHTML='<dt>No customer selected</dt><dd></dd>'}
+ render()}
+async function act(path,opts,after){if(busy)return;busy=true;render();
+ try{S=await FQ.api(path,Object.assign({method:'POST'},opts));if(after)after(S)}catch(e){toast(e.message);try{S=await FQ.api('/staff/console')}catch(_){}}
+ finally{busy=false;render()}}
+$('#wq').onclick=e=>{const b=e.target.closest('.row');if(!b)return;sel=b.dataset.id;render();details(sel)};
+$('#call').onclick=()=>act('/staff/call-next',{},s=>{const c=s.current;sel=c.id;details(c.id);speak(c.token,s.counter.name);$('#tok').classList.remove('pop');void $('#tok').offsetWidth;$('#tok').classList.add('pop')});
+$('#start').onclick=()=>act('/staff/start');
+$('#done').onclick=()=>{const t=S.current&&S.current.token;act('/staff/complete',{},()=>toast(t+' completed'))};
+$('#skip').onclick=()=>{const t=S.current&&S.current.token;act('/staff/skip',{},()=>toast(t+' skipped'))};
+$('#recall').onclick=()=>act('/staff/recall',{},s=>speak(s.current.token,s.counter.name));
+$('#stat').onchange=e=>{const v=e.target.value;act('/staff/status',{method:'PUT',body:{status:v}},()=>toast('Service status updated to '+v))};
+$('#theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=getComputedStyle(r).getPropertyValue('--mode').trim()==='dark'?'light':'dark'};
+$('#out').onclick=()=>FQ.logout();
+(async()=>{U=await FQ.guard(['staff']);
+ try{await load()}catch(e){toast(e.message)}
+ FQ.poll(()=>busy?null:load(),4000)})();
+</script>
+</body>
+</html>
