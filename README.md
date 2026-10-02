@@ -1409,28 +1409,4 @@ CSV export
 
 ---
 
-# License
 
-No license file or explicit open-source license is included in the supplied codebase.
-
-If this project will be distributed publicly, add an appropriate `LICENSE` file and update this section accordingly.
-
----
-
-# Project status
-
-flowQ currently provides a working end-to-end application architecture covering:
-
-- Customer appointment and queue workflows
-- Staff counter operations
-- Department management
-- Organization administration
-- Role-based permissions
-- Database persistence
-- Notifications
-- Reporting
-- CSV export
-- Demo data generation
-- Automated smoke testing
-
-External messaging and live nearby-location integrations remain outside the current implementation.
